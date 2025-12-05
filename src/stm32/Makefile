@@ -97,7 +97,7 @@ src-$(CONFIG_SERIAL_BRIDGE) += stm32/serial_bridge.c generic/serial_bridge_irq.c
 target-y += $(OUT)klipper.bin
 
 $(OUT)klipper.bin: $(OUT)klipper.elf
-	@echo "  Creating hex file $@"
+	@echo "  Creating bin file $@"
 	$(Q)$(OBJCOPY) -O binary $< $@
 
 # Flash rules

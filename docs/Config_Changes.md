@@ -8,6 +8,41 @@ All dates in this document are approximate.
 
 ## Changes
 
+20251122: An option `axis` has been added to `[carriage <name>]` sections
+for `generic_cartesian` kinematics, allowing arbitrary names for primary
+carriages. Users are encouraged to explicitly specify `axis` option now.
+
+20251106: The status fields `{printer.toolhead.position}`,
+`{printer.gcode_move.position}`,
+`{printer.gcode_move.gcode_position}`, and
+`{printer.motion_report.live_position}` are changing. These
+coordinates used to always contain four components, but now may
+contain additional components. The ordering and number of components
+may change at run-time - see the
+[status reference](Status_Reference.md#accessing-coordinates) for
+important details. Accessing any of these coordinates in macros using
+the ".e" accessor is deprecated - use something like
+`{printer.toolhead.position[printer.gcode_move.axis_map.E]}` as an
+alternative.
+
+20251106: The status fields `{printer.gcode_move.homing_origin}`,
+`{printer.toolhead.axis_min}`, and `{printer.toolhead.axis_max}`
+currently contain four components where the fourth component is always
+zero. This behavior is deprecated. In the future these coordinates may
+contain only three components. For additional information see the
+[status reference](Status_Reference.md#accessing-coordinates).
+
+20251010: During normal printing the command processing will now
+attempt to stay one second ahead of printer movement (reduced from two
+seconds previously).
+
+20251003: Support for the undocumented `max_stepper_error` option in
+the `[printer]` config section has been removed.
+
+20250916: The definitions of EI, 2HUMP_EI, and 3HUMP_EI input shapers
+were updated. For best performance it is recommended to recalibrate
+input shapers, especially if some of these shapers are currently used.
+
 20250811: Support for the `max_accel_to_decel` parameter in the
 `[printer]` config section has been removed and support for the
 `ACCEL_TO_DECEL` parameter in the `SET_VELOCITY_LIMIT` command has
