@@ -87,6 +87,10 @@ class LDC1612:
         self._sensor_errors = {}
         self.oid = oid = mcu.create_oid()
         self.query_ldc1612_cmd = None
+<<<<<<< HEAD
+=======
+        self.ldc1612_setup_home_cmd = self.query_ldc1612_home_state_cmd = None
+>>>>>>> screen/master
         self.clock_freq = config.getint("frequency", DEFAULT_LDC1612_FREQ,
                                         2000000, 40000000)
         # Coil frequency divider, assume 12MHz is BTT Eddy
@@ -129,6 +133,16 @@ class LDC1612:
             "query_ldc1612 oid=%c rest_ticks=%u", cq=cmdqueue)
         self.ffreader.setup_query_command("query_status_ldc1612 oid=%c",
                                           oid=self.oid, cq=cmdqueue)
+<<<<<<< HEAD
+=======
+        self.ldc1612_setup_home_cmd = self.mcu.lookup_command(
+            "ldc1612_setup_home oid=%c clock=%u threshold=%u"
+            " trsync_oid=%c trigger_reason=%c error_reason=%c", cq=cmdqueue)
+        self.query_ldc1612_home_state_cmd = self.mcu.lookup_query_command(
+            "query_ldc1612_home_state oid=%c",
+            "ldc1612_home_state oid=%c homing=%c trigger_clock=%u",
+            oid=self.oid, cq=cmdqueue)
+>>>>>>> screen/master
         errors = self.mcu.get_enumerations().get("ldc1612_error:", {})
         self._sensor_errors = {v: k for k, v in errors.items()}
     def get_mcu(self):
@@ -146,10 +160,29 @@ class LDC1612:
                            minclock=minclock)
     def add_client(self, cb):
         self.batch_bulk.add_client(cb)
+<<<<<<< HEAD
     def lookup_sensor_error(self, error):
         return self._sensor_errors.get(error, "Unknown ldc1612 error")
     def convert_frequency(self, freq):
         return int(freq / self.freq_conv + 0.5)
+=======
+    # Homing
+    def setup_home(self, print_time, trigger_freq,
+                   trsync_oid, hit_reason, err_reason):
+        clock = self.mcu.print_time_to_clock(print_time)
+        tfreq = int(trigger_freq / self.freq_conv + 0.5)
+        self.ldc1612_setup_home_cmd.send(
+            [self.oid, clock, tfreq, trsync_oid, hit_reason, err_reason])
+    def clear_home(self):
+        self.ldc1612_setup_home_cmd.send([self.oid, 0, 0, 0, 0, 0])
+        if self.mcu.is_fileoutput():
+            return 0.
+        params = self.query_ldc1612_home_state_cmd.send([self.oid])
+        tclock = self.mcu.clock32_to_clock64(params['trigger_clock'])
+        return self.mcu.clock_to_print_time(tclock)
+    def lookup_sensor_error(self, error):
+        return self._sensor_errors.get(error, "Unknown ldc1612 error")
+>>>>>>> screen/master
     # Measurement decoding
     def _convert_samples(self, samples):
         freq_conv = self.freq_conv

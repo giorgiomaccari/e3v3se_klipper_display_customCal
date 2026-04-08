@@ -206,12 +206,21 @@ class EddyCalibration:
         for pos, _, mad_hz, mad_mm in filtered:
             if len(points) and points[0] <= pos:
                 points.pop(0)
+<<<<<<< HEAD
                 msg = "z: %.3f # noise %.6fmm, MAD_Hz=%.3f\n" % (
                     pos, mad_mm, mad_hz)
                 gcode.respond_info(msg)
         return filtered
     def post_manual_probe(self, mpresult):
         if mpresult is None:
+=======
+                msg = "z_offset: %.3f # noise %.6fmm, MAD_Hz=%.3f\n" % (
+                    pos, mad_mm, mad_hz)
+                gcode.respond_info(msg)
+        return filtered
+    def post_manual_probe(self, kin_pos):
+        if kin_pos is None:
+>>>>>>> screen/master
             # Manual Probe was aborted
             return
         curpos = [mpresult.bed_x, mpresult.bed_y, mpresult.bed_z]
@@ -286,9 +295,12 @@ class EddyCalibration:
         if offset == 0:
             gcmd.respond_info("Nothing to do: Z Offset is 0")
             return
+<<<<<<< HEAD
         if gcmd.get("METHOD", "").lower() == "tap":
             self._save_tap_z_offset(gcmd, offset)
             return
+=======
+>>>>>>> screen/master
         cal_zpos = [z - offset for z in self.cal_zpos]
         z_freq_pairs = zip(cal_zpos, self.cal_freqs)
         z_freq_pairs = sorted(z_freq_pairs)
@@ -423,6 +435,7 @@ class EddyDescend:
             self._descend_z = config.getfloat('descend_z', above=0.)
         self._z_min_position = probe.lookup_minimum_z(config)
         self._gather = None
+<<<<<<< HEAD
     def _prep_trigger_analog(self):
         sos_filter = self._trigger_analog.get_sos_filter()
         sos_filter.set_filter_design(None)
@@ -431,6 +444,38 @@ class EddyDescend:
         trigger_freq = self._calibration.height_to_freq(self._descend_z)
         conv_freq = self._sensor_helper.convert_frequency(trigger_freq)
         self._trigger_analog.set_trigger('gt', conv_freq)
+=======
+        probe.LookupZSteppers(config, self._dispatch.add_stepper)
+    # Interface for phoming.probing_move()
+    def get_steppers(self):
+        return self._dispatch.get_steppers()
+    def home_start(self, print_time, sample_time, sample_count, rest_time,
+                   triggered=True):
+        self._trigger_time = 0.
+        trigger_freq = self._calibration.height_to_freq(self._z_offset)
+        trigger_completion = self._dispatch.start(print_time)
+        self._sensor_helper.setup_home(
+            print_time, trigger_freq, self._dispatch.get_oid(),
+            mcu.MCU_trsync.REASON_ENDSTOP_HIT, self.REASON_SENSOR_ERROR)
+        return trigger_completion
+    def home_wait(self, home_end_time):
+        self._dispatch.wait_end(home_end_time)
+        trigger_time = self._sensor_helper.clear_home()
+        res = self._dispatch.stop()
+        if res >= mcu.MCU_trsync.REASON_COMMS_TIMEOUT:
+            if res == mcu.MCU_trsync.REASON_COMMS_TIMEOUT:
+                raise self._printer.command_error(
+                    "Communication timeout during homing")
+            error_code = res - self.REASON_SENSOR_ERROR
+            error_msg = self._sensor_helper.lookup_sensor_error(error_code)
+            raise self._printer.command_error(error_msg)
+        if res != mcu.MCU_trsync.REASON_ENDSTOP_HIT:
+            return 0.
+        if self._mcu.is_fileoutput():
+            return home_end_time
+        self._trigger_time = trigger_time
+        return trigger_time
+>>>>>>> screen/master
     # Probe session interface
     def start_probe_session(self, gcmd):
         self._calibration.verify_calibrated()
@@ -787,9 +832,18 @@ class PrinterEddyProbe:
         self.probe_offsets = EddyProbeOffsets(config)
         self.param_helper = EddyParameterHelper(config)
         self.eddy_descend = EddyDescend(
+<<<<<<< HEAD
             config, self.sensor_helper, self.calibration, self.probe_offsets,
             self.param_helper, trig_analog)
         # Create wrapper to support Z homing with probe
+=======
+            config, self.sensor_helper, self.calibration, self.param_helper)
+        self.cmd_helper = probe.ProbeCommandHelper(config, self,
+            replace_z_offset=True)
+        self.probe_offsets = probe.ProbeOffsetsHelper(config)
+        self.probe_session = probe.ProbeSessionHelper(
+            config, self.param_helper, self.eddy_descend.start_probe_session)
+>>>>>>> screen/master
         mcu_probe = EddyEndstopWrapper(self.sensor_helper, self.eddy_descend)
         probe.HomingViaProbeHelper(config, mcu_probe,
                                    self.probe_offsets, self.param_helper)

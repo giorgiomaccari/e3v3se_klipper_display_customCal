@@ -117,12 +117,15 @@ class MCU_queued_pwm:
         wake_print_time = self._mcu.clock_to_print_time(wakeclock)
         self._motion_queuing.note_mcu_movequeue_activity(wake_print_time,
                                                          is_step_gen=False)
+<<<<<<< HEAD
     def _gen_intermediate_updates(self, clock):
         if self._last_value == self._default_value:
             return
         while clock >= self._last_clock + self._duration_ticks:
             self._send_update(self._last_clock + self._duration_ticks,
                               self._last_value)
+=======
+>>>>>>> screen/master
     def set_pwm(self, print_time, value):
         clock = self._mcu.print_time_to_clock(print_time)
         if self._invert:

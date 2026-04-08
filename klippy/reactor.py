@@ -1,6 +1,10 @@
 # File descriptor and timer event helper
 #
+<<<<<<< HEAD
 # Copyright (C) 2016-2026  Kevin O'Connor <kevin@koconnor.net>
+=======
+# Copyright (C) 2016-2025  Kevin O'Connor <kevin@koconnor.net>
+>>>>>>> screen/master
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
 import os, gc, select, math, time, logging, queue
@@ -130,7 +134,10 @@ class SelectReactor:
         self._cached_dispatch_greenlets = []
         self._all_greenlets = []
         self._prevent_pause_count = 0
+<<<<<<< HEAD
     # Python garbage collection
+=======
+>>>>>>> screen/master
     def get_gc_stats(self):
         return tuple(self._last_gc_times)
     def _check_gc(self, eventtime):
@@ -241,10 +248,28 @@ class SelectReactor:
         # Determine if this greenlet is the main dispatch greenlet
         g = greenlet.getcurrent()
         if g is not self._g_dispatch:
+<<<<<<< HEAD
             # This greenlet has called pause() before and has a timer setup,
             # so switch to _check_timers (via g.timer.callback return)
             return self._g_dispatch.switch(waketime)
         # Pausing the dispatch greenlet - setup timer to resume this greenlet
+=======
+            if self._g_dispatch is None:
+                return self._sys_pause(waketime)
+            # Switch to _check_timers (via g.timer.callback return)
+            if self._prevent_pause_count:
+                self.verify_can_pause()
+            return self._g_dispatch.switch(waketime)
+        # Pausing the dispatch greenlet - prepare a new greenlet to do dispatch
+        if self._prevent_pause_count:
+            self.verify_can_pause()
+        if self._greenlets:
+            g_next = self._greenlets.pop()
+        else:
+            g_next = ReactorGreenlet(run=self._dispatch_loop)
+            self._all_greenlets.append(g_next)
+        g_next.parent = g.parent
+>>>>>>> screen/master
         g.timer = self.register_timer(g.switch, waketime)
         self._next_timer = self.NOW
         if self._cached_dispatch_greenlets:
@@ -314,6 +339,10 @@ class SelectReactor:
         return eventtime
     # Main loop
     def _dispatch_loop(self):
+<<<<<<< HEAD
+=======
+        self._g_dispatch = greenlet.getcurrent()
+>>>>>>> screen/master
         busy = True
         eventtime = self.monotonic()
         while self._process:
@@ -326,11 +355,16 @@ class SelectReactor:
                 hdls = ([(fd, self._READ) for fd in res[0]]
                         + [(fd, self._WRITE) for fd in res[1]])
                 eventtime = self._check_fds(eventtime, hdls)
+<<<<<<< HEAD
+=======
+        self._g_dispatch = None
+>>>>>>> screen/master
     def run(self):
         if self._pipe_fds is None:
             self._setup_async_callbacks()
         self._process = True
         self._prevent_pause_count = 0
+<<<<<<< HEAD
         try:
             while self._process:
                 # Create new greenlet to dispatch timers and events
@@ -341,6 +375,11 @@ class SelectReactor:
                 # Control returns here on end() request or switch from pause()
         finally:
             self._g_dispatch = None
+=======
+        g_next = ReactorGreenlet(run=self._dispatch_loop)
+        self._all_greenlets.append(g_next)
+        g_next.switch()
+>>>>>>> screen/master
     def end(self):
         self._process = False
     def finalize(self):
@@ -381,6 +420,10 @@ class PollReactor(SelectReactor):
         self._poll.modify(file_handler.fd, flags)
     # Main loop
     def _dispatch_loop(self):
+<<<<<<< HEAD
+=======
+        self._g_dispatch = greenlet.getcurrent()
+>>>>>>> screen/master
         busy = True
         eventtime = self.monotonic()
         while self._process:
@@ -391,6 +434,10 @@ class PollReactor(SelectReactor):
             if res:
                 busy = True
                 eventtime = self._check_fds(eventtime, res)
+<<<<<<< HEAD
+=======
+        self._g_dispatch = None
+>>>>>>> screen/master
 
 class EPollReactor(SelectReactor):
     def __init__(self, gc_checking=False):
@@ -416,6 +463,10 @@ class EPollReactor(SelectReactor):
         self._epoll.modify(file_handler.fd, flags)
     # Main loop
     def _dispatch_loop(self):
+<<<<<<< HEAD
+=======
+        self._g_dispatch = greenlet.getcurrent()
+>>>>>>> screen/master
         busy = True
         eventtime = self.monotonic()
         while self._process:
@@ -426,6 +477,10 @@ class EPollReactor(SelectReactor):
             if res:
                 busy = True
                 eventtime = self._check_fds(eventtime, res)
+<<<<<<< HEAD
+=======
+        self._g_dispatch = None
+>>>>>>> screen/master
 
 # Use the poll based reactor if it is available
 try:

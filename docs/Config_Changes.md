@@ -8,6 +8,7 @@ All dates in this document are approximate.
 
 ## Changes
 
+<<<<<<< HEAD
 20260318: The `[probe_eddy_current]` config options `speed`,
 `lift_speed`, `samples`, `sample_retract_dist`, `samples_result`,
 `samples_tolerance`, and `samples_tolerance_retries` no longer apply
@@ -55,6 +56,11 @@ deviation at the given screw location and now one must not apply the
 sections for `generic_cartesian` kinematics, allowing arbitrary names
 for primary carriages. Users are encouraged to explicitly specify
 `axis` option now.
+=======
+20251122: An option `axis` has been added to `[carriage <name>]` sections
+for `generic_cartesian` kinematics, allowing arbitrary names for primary
+carriages. Users are encouraged to explicitly specify `axis` option now.
+>>>>>>> screen/master
 
 20251106: The status fields `{printer.toolhead.position}`,
 `{printer.gcode_move.position}`,

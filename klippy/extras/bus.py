@@ -186,13 +186,19 @@ class MCU_I2C:
         self.cmd_queue = self.mcu.alloc_command_queue()
         self.mcu.register_config_callback(self.build_config)
         self.i2c_write_cmd = self.i2c_read_cmd = None
+<<<<<<< HEAD
         self.i2c_transfer_cmd = self.i2c_write_only_cmd = None
+=======
+>>>>>>> screen/master
         printer = self.mcu.get_printer()
         printer.register_event_handler("klippy:connect", self._handle_connect)
         # backward support i2c_write inside the init section
         self._to_write = []
+<<<<<<< HEAD
         # Host side I2C error handling
         self._configured = False
+=======
+>>>>>>> screen/master
     def _handle_connect(self):
         for data in self._to_write:
             self.i2c_write(data)
@@ -225,6 +231,7 @@ class MCU_I2C:
                 configfile = self.mcu.get_printer().lookup_object('configfile')
                 configfile.deprecate_mcu_code(self.mcu, 'i2c_set_sw_bus')
         self.mcu.add_config_cmd(self.config_fmt)
+<<<<<<< HEAD
         if self.mcu.try_lookup_command("i2c_read oid=%c reg=%*s read_len=%u"):
             self.i2c_write_cmd = self.mcu.lookup_command(
                 "i2c_write oid=%c data=%*s", cq=self.cmd_queue)
@@ -272,6 +279,21 @@ class MCU_I2C:
             self.i2c_transfer(data, minclock=minclock, reqclock=reqclock,
                               retry=retry)
             return
+=======
+        self.i2c_write_cmd = self.mcu.lookup_command(
+            "i2c_write oid=%c data=%*s", cq=self.cmd_queue)
+        self.i2c_read_cmd = self.mcu.lookup_query_command(
+            "i2c_read oid=%c reg=%*s read_len=%u",
+            "i2c_read_response oid=%c response=%*s", oid=self.oid,
+            cq=self.cmd_queue)
+    def i2c_write_noack(self, data, minclock=0, reqclock=0):
+        self.i2c_write_cmd.send([self.oid, data],
+                                minclock=minclock, reqclock=reqclock)
+    def i2c_write(self, data, minclock=0, reqclock=0):
+        if self.i2c_write_cmd is None:
+            self._to_write.append(data)
+            return
+>>>>>>> screen/master
         self.i2c_write_cmd.send_wait_ack([self.oid, data],
                                          minclock=minclock, reqclock=reqclock)
     def i2c_read(self, write, read_len, retry=True):

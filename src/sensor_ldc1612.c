@@ -94,7 +94,66 @@ DECL_COMMAND(ldc1612_attach_trigger_analog,
     "ldc1612_attach_trigger_analog oid=%c trigger_analog_oid=%c");
 #endif
 
+<<<<<<< HEAD
 #define DATA_ERROR_AMPLITUDE (1L << 28)
+=======
+void
+command_query_ldc1612_home_state(uint32_t *args)
+{
+    struct ldc1612 *ld = oid_lookup(args[0], command_config_ldc1612);
+    sendf("ldc1612_home_state oid=%c homing=%c trigger_clock=%u"
+          , args[0], !!(ld->homing_flags & LH_CAN_TRIGGER), ld->homing_clock);
+}
+DECL_COMMAND(command_query_ldc1612_home_state,
+             "query_ldc1612_home_state oid=%c");
+
+// Cancel homing due to an error
+static void
+cancel_homing(struct ldc1612 *ld, int error_code)
+{
+    if (!(ld->homing_flags & LH_CAN_TRIGGER))
+        return;
+    ld->homing_flags = 0;
+    trsync_do_trigger(ld->ts, ld->error_reason + error_code);
+}
+
+#define MAX_VALID_RAW_VALUE    0x03ffffff
+#define DATA_ERROR_AMPLITUDE (1L << 28)
+
+static int
+check_data_bits(struct ldc1612 *ld, uint32_t raw_data) {
+    // Ignore amplitude errors
+    raw_data &= ~DATA_ERROR_AMPLITUDE;
+    // Datasheet define valid frequency input as < F_ref / 4
+    if (raw_data < MAX_VALID_RAW_VALUE)
+        return 0;
+    cancel_homing(ld, SE_SENSOR_ERROR);
+    return -1;
+}
+
+// Check if a sample should trigger a homing event
+static void
+check_home(struct ldc1612 *ld, uint32_t raw_data)
+{
+    uint8_t homing_flags = ld->homing_flags;
+    if (!(homing_flags & LH_CAN_TRIGGER))
+        return;
+    if (check_data_bits(ld, raw_data))
+        return;
+    uint32_t data = raw_data & 0x0fffffff;
+    uint32_t time = timer_read_time();
+    if ((homing_flags & LH_AWAIT_HOMING)
+        && timer_is_before(time, ld->homing_clock))
+        return;
+    homing_flags &= ~LH_AWAIT_HOMING;
+    if (data > ld->trigger_threshold) {
+        homing_flags = 0;
+        ld->homing_clock = time;
+        trsync_do_trigger(ld->ts, ld->trigger_reason);
+    }
+    ld->homing_flags = homing_flags;
+}
+>>>>>>> screen/master
 
 // Chip registers
 #define REG_DATA0_MSB 0x00
@@ -124,7 +183,11 @@ read_reg_status(struct ldc1612 *ld, uint16_t *status)
 static void
 report_sample_error(struct ldc1612 *ld, int error_code)
 {
+<<<<<<< HEAD
     trigger_analog_note_error(ld->ta, error_code);
+=======
+    cancel_homing(ld, error_code);
+>>>>>>> screen/master
 
     uint8_t *d = &ld->sb.data[ld->sb.data_count];
     d[0] = 0xff;
@@ -166,6 +229,7 @@ ldc1612_query(struct ldc1612 *ld, uint8_t oid)
         goto out;
     }
 
+<<<<<<< HEAD
     // Check for homing trigger
     uint32_t raw_data = (((uint32_t)d[0] << 24) | ((uint32_t)d[1] << 16)
                          | ((uint32_t)d[2] << 8) | ((uint32_t)d[3]));
@@ -174,6 +238,14 @@ ldc1612_query(struct ldc1612 *ld, uint8_t oid)
     else
         trigger_analog_update(ld->ta, raw_data & 0x0fffffff);
 
+=======
+    // Check for endstop trigger
+    uint32_t data =   ((uint32_t)d[0] << 24)
+                    | ((uint32_t)d[1] << 16)
+                    | ((uint32_t)d[2] << 8)
+                    | ((uint32_t)d[3]);
+    check_home(ld, data);
+>>>>>>> screen/master
 out:
     ld->sb.data_count += BYTES_PER_SAMPLE;
     // Flush local buffer if needed

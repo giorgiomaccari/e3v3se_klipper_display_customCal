@@ -37,11 +37,21 @@ class MainCarriage:
     def __init__(self, config):
         self.rail = stepper.GenericPrinterRail(config)
         carriage_name = self.rail.get_name(short=True)
+<<<<<<< HEAD
         if carriage_name in VALID_AXES:
             self.axis_name = config.getchoice('axis', VALID_AXES, carriage_name)
         else:
             self.axis_name = config.getchoice('axis', VALID_AXES)
         self.axis = ord(self.axis_name) - ord('x')
+=======
+        valid_axes = ['x', 'y', 'z']
+        if carriage_name in valid_axes:
+            axis_name = config.getchoice('axis', valid_axes, carriage_name)
+        else:
+            axis_name = config.getchoice('axis', valid_axes)
+        self.axis = ord(axis_name) - ord('x')
+        self.axis_name = axis_name
+>>>>>>> screen/master
         self.dual_carriage = None
     def get_name(self):
         return self.rail.get_name(short=True)
@@ -113,8 +123,14 @@ class DualCarriage:
         self.primary_carriage.set_dual_carriage(self)
         self.axis = self.primary_carriage.get_axis()
         if self.axis > 1:
+<<<<<<< HEAD
             raise self.config_error("Invalid axis '%s' for dual_carriage '%s'" %
                                     ("xyz"[self.axis], self.get_name()))
+=======
+            raise config.error("Invalid axis '%s' for dual_carriage" %
+                               "xyz"[self.axis])
+        self.safe_dist = config.getfloat('safe_distance', None, minval=0.)
+>>>>>>> screen/master
     def get_name(self):
         return self.rail.get_name(short=True)
     def get_axis(self):
@@ -193,6 +209,7 @@ class GenericCartesianKinematics:
                                self.cmd_SET_STEPPER_CARRIAGES,
                                desc=self.cmd_SET_STEPPER_CARRIAGES_help)
     def _load_kinematics(self, config):
+<<<<<<< HEAD
         primary_carriages = []
         for mcconfig in config.get_prefix_sections('carriage '):
             primary_carriages.append(MainCarriage(mcconfig))
@@ -212,6 +229,23 @@ class GenericCartesianKinematics:
         carriages = {}
         for carriage in primary_carriages + dc_carriages:
             name = carriage.get_name()
+=======
+        carriages = {}
+        for mcconfig in config.get_prefix_sections('carriage '):
+            c = MainCarriage(mcconfig)
+            axis = c.get_axis()
+            dups = [mc for mc in carriages.values() if mc.get_axis() == axis]
+            if dups:
+                raise config.error(
+                        "Axis '%s' referenced by multiple carriages (%s, %s)"
+                        % ("xyz"[axis], c.get_name(), dups[0].get_name()))
+            carriages[c.get_name()] = c
+        dc_carriages = []
+        for dcconfig in config.get_prefix_sections('dual_carriage '):
+            dc_carriages.append(DualCarriage(dcconfig, carriages))
+        for dc in dc_carriages:
+            name = dc.get_name()
+>>>>>>> screen/master
             if name in carriages:
                 raise config.error("Redefinition of carriage %s" % name)
             carriages[name] = carriage
@@ -254,6 +288,21 @@ class GenericCartesianKinematics:
                 for c in config.get_prefix_sections('stepper ')]
     def get_steppers(self):
         return [s.get_stepper() for s in self.kin_steppers]
+<<<<<<< HEAD
+=======
+    def get_primary_carriages(self):
+        carriages = [None] * 3
+        for carriage in self.carriages.values():
+            a = carriage.get_axis()
+            if carriage.get_dual_carriage() is not None:
+                primary_rail = self.dc_module.get_primary_rail(a)
+                for c in self.carriages.values():
+                    if c.get_rail() == primary_rail:
+                        carriages[a] = c
+            else:
+                carriages[a] = carriage
+        return carriages
+>>>>>>> screen/master
     def _get_kinematics_coeffs(self):
         matr = {s.get_name() : list(s.get_kin_coeffs())
                 for s in self.kin_steppers}
@@ -328,11 +377,22 @@ class GenericCartesianKinematics:
         primary_carriages = {c.get_axis(): c for c in self.primary_carriages}
         # Each axis is homed independently and in order
         for axis in homing_state.get_axes():
+<<<<<<< HEAD
             if self.dc_module is not None and axis in self.dc_module.get_axes():
                 self.dc_module.home(homing_state, axis)
             else:
                 carriage = primary_carriages[axis]
                 self.home_axis(homing_state, axis, carriage.get_rail())
+=======
+            for carriage in self.carriages.values():
+                if carriage.get_axis() != axis:
+                    continue
+                if carriage.get_dual_carriage() != None:
+                    self.dc_module.home(homing_state, axis)
+                else:
+                    self.home_axis(homing_state, axis, carriage.get_rail())
+                break
+>>>>>>> screen/master
     def _check_endstops(self, move):
         end_pos = move.end_pos
         for i in (0, 1, 2):
@@ -358,6 +418,7 @@ class GenericCartesianKinematics:
             self.max_z_velocity * z_ratio, self.max_z_accel * z_ratio)
     def get_status(self, eventtime):
         axes = [a for a, (l, h) in zip("xyz", self.limits) if l <= h]
+<<<<<<< HEAD
         ranges = [(min(c.get_rail().get_range()[0]
                        for c in self.carriages.values()
                        if c.get_axis() == axis),
@@ -365,6 +426,10 @@ class GenericCartesianKinematics:
                        for c in self.carriages.values()
                        if c.get_axis() == axis))
                  for axis in range(3)]
+=======
+        ranges = [c.get_rail().get_range()
+                  for c in self.get_primary_carriages()]
+>>>>>>> screen/master
         axes_min = gcode.Coord([r[0] for r in ranges])
         axes_max = gcode.Coord([r[1] for r in ranges])
         return {

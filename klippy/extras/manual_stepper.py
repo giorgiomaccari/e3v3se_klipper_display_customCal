@@ -223,6 +223,11 @@ class ManualStepper:
                                              drip_completion)
         # Clear trapq of any remaining parts of movement
         self.motion_queuing.wipe_trapq(self.trapq)
+<<<<<<< HEAD
+=======
+        self.rail.set_position([self.commanded_pos, 0., 0.])
+        self.sync_print_time()
+>>>>>>> screen/master
     def get_kinematics(self):
         return self
     def get_steppers(self):
