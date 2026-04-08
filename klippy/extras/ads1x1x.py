@@ -394,5 +394,8 @@ class ADS1X1X_pin:
     def get_last_value(self):
         return self._last_state
 
+    def get_last_value(self):
+        return self._last_state
+
 def load_config_prefix(config):
     return ADS1X1X_chip(config)
