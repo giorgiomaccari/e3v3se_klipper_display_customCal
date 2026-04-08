@@ -4704,25 +4704,7 @@ max_accel:
 #max_z_accel:
 </code></pre></div>
 
-<p>&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
-Then a user must define three primary carriages for X, Y, and Z axes, e.g.:
-=======
-Then a user must define three carriages for X, Y, and Z axes, e.g.:</p>
-<blockquote>
-<blockquote>
-<blockquote>
-<blockquote>
-<blockquote>
-<blockquote>
-<blockquote>
-<p>screen/master</p>
-</blockquote>
-</blockquote>
-</blockquote>
-</blockquote>
-</blockquote>
-</blockquote>
-</blockquote>
+<p>Then a user must define three primary carriages for X, Y, and Z axes, e.g.:</p>
 <div class="highlight"><pre><span></span><code>[carriage carriage_x]
 axis:
 #   Axis of a carriage, either x, y, or z. This parameter must be provided,
@@ -6335,7 +6317,6 @@ kinematic, see the following configuration
 Please note that in this case the <code>[dual_carriage]</code> configuration deviates
 from the configuration described above:</p>
 <div class="highlight"><pre><span></span><code>[dual_carriage my_dc_carriage]
-&lt;&lt;&lt;&lt;&lt;&lt;&lt; HEAD
 #primary_carriage:
 #   Defines the matching carriage on the same gantry as this dual carriage and
 #   the corresponding dual axis. Must match a name of a defined `[carriage]` or
@@ -6346,12 +6327,6 @@ from the configuration described above:</p>
 #   Axis of a carriage, either x or y. If &#39;primary_carriage&#39; is defined, then
 #   this parameter defaults to the &#39;axis&#39; parameter of that primary carriage,
 #   otherwise this parameter must be defined.
-=======
-primary_carriage:
-#   Defines the matching primary carriage of this dual carriage and
-#   the corresponding IDEX axis. Must match a name of a defined `[carriage]`.
-#   This parameter must be provided.
-&gt;&gt;&gt;&gt;&gt;&gt;&gt; screen/master
 #safe_distance:
 #   The minimum distance (in mm) to enforce between the dual and the primary
 #   carriages. If a G-Code command is executed that will bring the carriages
