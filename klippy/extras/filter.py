@@ -18,8 +18,9 @@ class RCTFilter:
         out_vals = []
         if len(vals) < 3:
             return vals
-        for i in range(len(vals) - 2):   
-            tmp = [math.fabs(vals[i]), math.fabs(vals[i + 1]), math.fabs(vals[i + 2])]
+        for i in range(len(vals) - 2):
+            tmp = [math.fabs(vals[i]), math.fabs(
+                vals[i + 1]), math.fabs(vals[i + 2])]
             index = tmp.index(min(tmp))
             out_vals.append(vals[index + i])
         out_vals.append(vals[-2])
@@ -50,18 +51,23 @@ class RCLFilter:
     def ftr_val(self, vals):
         out_vals = [vals[0]]
         for i in range(1, len(vals)):
-            out_vals.append(out_vals[-1] * (1 - self.k1_new) + vals[i] * self.k1_new)
+            out_vals.append(
+                out_vals[-1] * (1 - self.k1_new) + vals[i] * self.k1_new)
         return out_vals
 
 
 class Filter:
     def __init__(self, config):
-        self.hft_hz = config.getfloat('hft_hz', default=5, minval=0.1, maxval=10.)
-        self.lft_k1 = config.getfloat('lft_k1', default=0.8, minval=0., maxval=1.)
-        self.lft_k1_oft = config.getfloat('lft_k1_oft', default=0.8, minval=0., maxval=1.)
-        self.lft_k1_cal = config.getfloat('lft_k1_cal', default=0.8, minval=0., maxval=1.)
+        self.hft_hz = config.getfloat(
+            'hft_hz', default=5, minval=0.1, maxval=10.)
+        self.lft_k1 = config.getfloat(
+            'lft_k1', default=0.8, minval=0., maxval=1.)
+        self.lft_k1_oft = config.getfloat(
+            'lft_k1_oft', default=0.8, minval=0., maxval=1.)
+        self.lft_k1_cal = config.getfloat(
+            'lft_k1_cal', default=0.8, minval=0., maxval=1.)
         pass
-    
+
     def get_tft(self):
         return RCTFilter()
 
@@ -93,7 +99,6 @@ class Filter:
             for j in range(len(tmp_vals[i])):
                 tmp_vals[i][j] = abs(tmp_vals[i][j])
         return out_vals, tmp_vals
-
 
     def cal_filter_by_vals(self, s_count, now_valss, hft_hz, lft_k1, cut_len):
         out_vals = []

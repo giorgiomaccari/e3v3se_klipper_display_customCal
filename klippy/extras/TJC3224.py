@@ -1,6 +1,7 @@
 import time
 import math
 
+
 class TJC3224_LCD:
     """
     Class representing the control interface for a TJC3224 LCD display.
@@ -64,7 +65,7 @@ class TJC3224_LCD:
             serial : Serial object to send messages.
         """
         self.serial = serial
-    
+
     def init_display(self):
         print("Sending handshake... ")
         while not self.handshake():
@@ -96,7 +97,8 @@ class TJC3224_LCD:
         :param lval: The four-byte value to be appended.
         :type lval: int
         """
-        self.data_frame += int(long_val).to_bytes(4, byteorder="big", signed=True)
+        self.data_frame += int(long_val).to_bytes(4,
+                                                  byteorder="big", signed=True)
 
     def double_64(self, double_val):
         """

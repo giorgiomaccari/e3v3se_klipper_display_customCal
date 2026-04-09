@@ -4,7 +4,8 @@ repository available on (https://github.com/odwdinc/DWIN_T5UIC1_LCD)
 with no to minimal changes. All credits go to the original author.
 """
 import logging
-import os, re
+import os
+import re
 
 
 class xyze_t:
@@ -86,6 +87,7 @@ class material_preset_t:
         self.bed_temp = bed_temp
         self.fan_speed = fan_speed
 
+
 class PrinterData:
     event_loop = None
     HAS_HOTEND = True
@@ -121,7 +123,6 @@ class PrinterData:
 
     Z_PROBE_OFFSET_RANGE_MIN = -20
     Z_PROBE_OFFSET_RANGE_MAX = 20
-
 
     BABY_Z_VAR = 0
     feedrate_percentage = 100
@@ -175,7 +176,6 @@ class PrinterData:
     def handle_ready(self):
         self.update_variable()
         self.get_additional_values()
- 
 
     def get_additional_values(self):
         toolhead = self.printer.lookup_object(
@@ -212,7 +212,7 @@ class PrinterData:
                                 "z_offset"
                             ]
                         )
-    
+
     def ishomed(self):
         if (
             self.current_position.home_x
@@ -232,11 +232,11 @@ class PrinterData:
     def postREST(self, path, json):
         self.log("postREST called")
 
-
     def GetFiles(self):
         sdcard = self.printer.lookup_object('virtual_sdcard')
         files = sdcard.get_file_list(True)
-        self.subdirIndex = len(self.subdirPath.split('/')) if self.subdirPath else 0
+        self.subdirIndex = len(self.subdirPath.split('/')
+                               ) if self.subdirPath else 0
         self.fl = []
         self.names = []
         self.subdirs = []
@@ -244,31 +244,31 @@ class PrinterData:
         # Find all folders in current subdirectory
         for file, _ in files:
             path = file.split('/')
-            if(file.startswith(self.subdirPath)):
+            if (file.startswith(self.subdirPath)):
                 name = path[self.subdirIndex]
                 if len(path) > self.subdirIndex + 1:
                     if not name in self.subdirs:
-                        self.subdirs.append(name) # add to checked subdirs
-                        self.names.append(name) # add only the name
-                        self.fl.append(file) # add full filepath
+                        self.subdirs.append(name)  # add to checked subdirs
+                        self.names.append(name)  # add only the name
+                        self.fl.append(file)  # add full filepath
 
         # Find all files
         for file, _ in files:
             path = file.split('/')
-            if file.startswith(self.subdirPath) :
+            if file.startswith(self.subdirPath):
                 name = path[self.subdirIndex]
                 if len(path) == self.subdirIndex + 1:
                     self.names.append(path[self.subdirIndex])
                     self.fl.append(file)
-        
+
         return self.names
-    
+
     def selectFile(self, index):
         file = self.fl[index]
         if len(file.split('/')) == self.subdirIndex + 1:
             return True
         else:
-            if(self.subdirPath):
+            if (self.subdirPath):
                 currentPath = self.subdirPath.split('/')
             else:
                 currentPath = []
@@ -289,7 +289,8 @@ class PrinterData:
             "gcode_move").get_status(self.reactor.monotonic())
         z_offset = gcm["homing_origin"][2]  # z offset
         extrusionMultiplier = gcm["extrude_factor"] * 100  # flow rate percent
-        self.absolute_moves = gcm["absolute_coordinates"]  # absolute or relative
+        # absolute or relative
+        self.absolute_moves = gcm["absolute_coordinates"]
         self.absolute_extrude = gcm["absolute_extrude"]  # absolute or relative
         speed = gcm["speed"]  # current speed in mm/s
         print_speed = gcm["speed_factor"] * 100  # print speed percent
@@ -303,7 +304,8 @@ class PrinterData:
         Update = False
         try:
             if self.thermalManager["temp_bed"]["celsius"] != int(bed["temperature"]):
-                self.thermalManager["temp_bed"]["celsius"] = int(bed["temperature"])
+                self.thermalManager["temp_bed"]["celsius"] = int(
+                    bed["temperature"])
                 Update = True
             if self.thermalManager["temp_bed"]["target"] != int(bed["target"]):
                 self.thermalManager["temp_bed"]["target"] = int(bed["target"])
@@ -339,7 +341,8 @@ class PrinterData:
                 self.HMI_ValueStruct.offset_value = z_offset * 100
                 Update = True
         except:
-            pass  # missing key, shouldn't happen, fixes misses on conditionals ¯\_(ツ)_/¯
+            # missing key, shouldn't happen, fixes misses on conditionals ¯\_(ツ)_/¯
+            pass
         self.job_Info = self.printer.lookup_object(
             "print_stats").get_status(self.reactor.monotonic())
         if self.job_Info:
@@ -420,22 +423,23 @@ class PrinterData:
         # 		self.sendGCode('M104 T%s S%s\nM109 T%s S%s' % (toolnum, exttemp, toolnum, exttemp))
         self.setBedTemp(bedtemp)
         self.setExtTemp(exttemp)
-    
+
     def bedIsHeating(self):
         bed = self.printer.lookup_object(
             "heater_bed").get_status(self.reactor.monotonic())
         return (int(bed["target"]) > int(bed["temperature"])) if bed else False
-         
+
     def nozzleIsHeating(self):
         extruder = self.printer.lookup_object(
             "extruder").get_status(self.reactor.monotonic())
         return (int(extruder["target"]) > int(extruder["temperature"])) if extruder else False
-    
+
     def openFile(self, file):
         self.selectedFile = file
-    
+
     def printSelectedFile(self):
-        self.sendGCode('SDCARD_PRINT_FILE FILENAME="{}"'.format(str(self.selectedFile)))
+        self.sendGCode('SDCARD_PRINT_FILE FILENAME="{}"'.format(
+            str(self.selectedFile)))
 
     def scanMetadata(self):
         sdcard = self.printer.lookup_object('virtual_sdcard')
@@ -444,67 +448,76 @@ class PrinterData:
             'layer_height': None,
             'estimated_time': None,
             'filament_used': None,
-            'thumbnail': None # Default to placeholder image
+            'thumbnail': None  # Default to placeholder image
         }
-        
+
         try:
             with open(fileDir, 'r') as file:
                 executable_block_end = False
                 for line in file:
                     if executable_block_end:
                         if "; layer_height" in line:
-                            match = re.search(r"(\d+\.\d+)", line) # Extract the value
+                            # Extract the value
+                            match = re.search(r"(\d+\.\d+)", line)
                             if match:
                                 self.metadata['layer_height'] = f"{float(match.group(1))}mm"
 
                         elif "estimated printing time" in line:
-                            match = re.search(r'(?:(\d+)h)?\s*(\d+)m?\s*(\d+)s?', line)  # Extract hours, minutes, and seconds
+                            # Extract hours, minutes, and seconds
+                            match = re.search(
+                                r'(?:(\d+)h)?\s*(\d+)m?\s*(\d+)s?', line)
                             if match:
-                                hours = match.group(1) if match.group(1) else ""
-                                minutes = match.group(2) if match.group(2) else "00"
-                                seconds = match.group(3) if match.group(3) else "00"
+                                hours = match.group(
+                                    1) if match.group(1) else ""
+                                minutes = match.group(
+                                    2) if match.group(2) else "00"
+                                seconds = match.group(
+                                    3) if match.group(3) else "00"
                                 # Format as --h--m--s
                                 self.metadata['estimated_time'] = f"{hours}h{minutes}m{seconds}s" if hours else f'{minutes}m{seconds}s'
 
                         elif "filament used [mm]" in line:
-                            match = re.search(r"filament used \[mm\] = (\d+\.\d+)", line) # Extract the value
+                            # Extract the value
+                            match = re.search(
+                                r"filament used \[mm\] = (\d+\.\d+)", line)
                             if match:
                                 filament_used_mm = float(match.group(1))
                                 self.metadata['filament_used'] = f"{round(filament_used_mm / 1000, 2)}m"
-                        
+
                     if "; EXECUTABLE_BLOCK_END" in line:
                         executable_block_end = True
 
-                            
         except FileNotFoundError:
             self.log(f"Unable to find file: {fileDir}")
-
 
     def sendGCode(self, Gcode):
         self.gcode._process_commands([Gcode])
 
     def probe_calibrate(self):
-        self.sendGCode('G28') # home the printer
-        self.sendGCode('PRTOUCH_PROBE_OFFSET CLEAR_NOZZLE=0 APPLY_Z_ADJUST=1') # use the prtouch to find the z offset and apply it
+        self.sendGCode('G28')  # home the printer
+        # use the prtouch to find the z offset and apply it
+        self.sendGCode('PRTOUCH_PROBE_OFFSET CLEAR_NOZZLE=0 APPLY_Z_ADJUST=1')
 
     def resume_job(self):
-        self.sendGCode('RESUME') # resume the print
+        self.sendGCode('RESUME')  # resume the print
 
     def pause_job(self):
-        self.sendGCode('PAUSE') # pause the print
+        self.sendGCode('PAUSE')  # pause the print
 
     def cancel_job(self):
-        self.sendGCode('CANCEL_PRINT') # cancel the print
+        self.sendGCode('CANCEL_PRINT')  # cancel the print
 
     def set_feedrate(self, value):
-        self.sendGCode('M220 S' + str(value)) # set the feedrate through the M220 gcode command
+        # set the feedrate through the M220 gcode command
+        self.sendGCode('M220 S' + str(value))
 
     def moveAbsolute(self, axis, pos, feedrate):
-        self.sendGCode('M82') # change to absolute positioning
-        self.sendGCode('G1 {}{} F{}'.format(axis, str(pos), str(feedrate))) # move the specified axis at the set feedrate
+        self.sendGCode('M82')  # change to absolute positioning
+        # move the specified axis at the set feedrate
+        self.sendGCode('G1 {}{} F{}'.format(axis, str(pos), str(feedrate)))
 
     def save_settings(self):
-        self.sendGCode('SAVE_CONFIG') # save the current configuration changes
+        self.sendGCode('SAVE_CONFIG')  # save the current configuration changes
 
     def setExtTemp(self, target, toolnum=0):
         self.sendGCode("M104 T%s S%s" % (toolnum, str(target)))
@@ -516,7 +529,7 @@ class PrinterData:
         self.sendGCode('SET_GCODE_OFFSET Z={} MOVE=1'.format(str(offset)))
 
     def add_mm(self, axis, zoffset):
-        pass # done in offsetZ
+        pass  # done in offsetZ
 
     def log(self, msg, *args, **kwargs):
         if self._logging:
