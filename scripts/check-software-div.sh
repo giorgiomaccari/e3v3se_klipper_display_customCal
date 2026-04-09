@@ -5,6 +5,8 @@ CFGFILE="$1"
 ELFOBJ="$2"
 OBJDUMP=objdump
 
+objdump -t ${ELFOBJ}
+
 objdump -t ${ELFOBJ} | grep -Eq '\<(__[a-z0-9]*div|__[a-z0-9]*mod)'
 if [ $? -eq 0 ]; then
 
