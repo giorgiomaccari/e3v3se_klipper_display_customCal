@@ -157,7 +157,7 @@ class PrinterSerialBridge:
 
         cmd_queue = self.mcu.alloc_command_queue()
 
-        self.mcu.register_response(self._handle_serial_bridge_response,
+        self.mcu.register_serial_response(self._handle_serial_bridge_response,
             "serial_bridge_response", self.oid)
         self.serial_bridge_send_cmd = self.mcu.lookup_command(
             "serial_bridge_send oid=%c text=%*s",
