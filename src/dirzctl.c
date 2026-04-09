@@ -38,10 +38,10 @@ struct dirzctl
 struct task_wake dirzctl_wake;
 
 //struct dirzctl *d = NULL;
-void 
+void
 command_config_dirzctl(uint32_t *args);
 
-static void 
+static void
 deal_dirs(struct dirzctl *d, int32_t dir, int32_t is_save)
 {
     if (is_save > 0)
@@ -59,14 +59,14 @@ deal_dirs(struct dirzctl *d, int32_t dir, int32_t is_save)
     }
 }
 
-static void 
+static void
 deal_steps(struct dirzctl *d)
 {
-	for (int i = 0; i < d->count; i++)
+    for (int i = 0; i < d->count; i++)
         gpio_out_toggle_noirq(d->steps[i]);
 }
 
-static void 
+static void
 send_status(struct dirzctl *d)
 {
     d->a_ticks = timer_read_time();
@@ -74,13 +74,13 @@ send_status(struct dirzctl *d)
     d->a_finish = 1;
 }
 
-static uint_fast8_t 
+static uint_fast8_t
 dirzctl_event(struct timer *t)
 {
-	struct dirzctl *d = container_of(t,struct dirzctl,time);
+    struct dirzctl *d = container_of(t,struct dirzctl,time);
 
     sched_wake_task(&dirzctl_wake);
-	deal_steps(d);
+    deal_steps(d);
     d->r_steps--;
     if((d->r_steps == 0) || ((d->r_steps % 2 == 0) && (d->r_stop == 1)))
     {
@@ -88,18 +88,25 @@ dirzctl_event(struct timer *t)
         send_status(d);
         deal_dirs(d,0, 0);
         d->r_stop = 0;
-        return SF_DONE;        
+        return SF_DONE;
     }else if(d->r_steps == d->r_steps_fix - 1)
         send_status(d);
     d->time.waketime = timer_read_time() + d->n_ticks;
     return SF_RESCHEDULE;
 }
 
-void 
+void
 command_config_dirzctl(uint32_t *args)
 {
-    sendf("debug_dirzctl oid=%c arg[0]=%u arg[1]=%u arg[2]=%u arg[3]=%u arg[4]=%u arg[5]=%u", 
-        (uint8_t)args[0], (uint32_t)args[0], (uint32_t)args[1], (uint32_t)args[2], (uint32_t)args[3], (uint32_t)args[4], (uint32_t)args[5]);
+    sendf("debug_dirzctl oid=%c arg[0]=%u arg[1]=%u "
+        "arg[2]=%u arg[3]=%u arg[4]=%u arg[5]=%u",
+        (uint8_t)args[0],
+        (uint32_t)args[0],
+        (uint32_t)args[1],
+        (uint32_t)args[2],
+        (uint32_t)args[3],
+        (uint32_t)args[4],
+        (uint32_t)args[5]);
     struct dirzctl* d = oid_alloc(args[0], command_config_dirzctl, sizeof(*d));
     d->oid = args[0];
     d->count = args[1];
@@ -111,15 +118,22 @@ command_config_dirzctl(uint32_t *args)
 }
 DECL_COMMAND(command_config_dirzctl, "config_dirzctl oid=%c z_count=%c");
 
-void 
+void
 command_add_dirzctl(uint32_t *args)
 {
     uint8_t index = args[1];
-	uint8_t oid = args[0];
-	struct dirzctl* d = oid_lookup(oid,command_config_dirzctl);
+    uint8_t oid = args[0];
+    struct dirzctl* d = oid_lookup(oid,command_config_dirzctl);
 
-    sendf("debug_dirzctl oid=%c arg[0]=%u arg[1]=%u arg[2]=%u arg[3]=%u arg[4]=%u arg[5]=%u", 
-        (uint8_t)args[0], (uint32_t)args[0], (uint32_t)args[1], (uint32_t)args[2], (uint32_t)args[3], (uint32_t)args[4], (uint32_t)args[5]);
+    sendf("debug_dirzctl oid=%c arg[0]=%u arg[1]=%u "
+        "arg[2]=%u arg[3]=%u arg[4]=%u arg[5]=%u",
+        (uint8_t)args[0],
+        (uint32_t)args[0],
+        (uint32_t)args[1],
+        (uint32_t)args[2],
+        (uint32_t)args[3],
+        (uint32_t)args[4],
+        (uint32_t)args[5]);
     if (index >= 4)
         shutdown("Set direct z ctl maximum count");
     d->dir_inverts[index] = args[4];
@@ -128,73 +142,80 @@ command_add_dirzctl(uint32_t *args)
     d->dirs[index] = gpio_out_setup(args[2], 0);
     d->steps[index] = gpio_out_setup(args[3], args[5]);
 }
-DECL_COMMAND(command_add_dirzctl, "add_dirzctl oid=%c index=%c dir_pin=%u step_pin=%u dir_invert=%c step_invert=%c");
+DECL_COMMAND(command_add_dirzctl,
+    "add_dirzctl oid=%c index=%c dir_pin=%u "
+    "step_pin=%u dir_invert=%c step_invert=%c");
 
-void 
+void
 command_run_dirzctl(uint32_t *args)
 {
-    //sendf("debug_dirzctl oid=%c arg[0]=%u arg[1]=%u arg[2]=%u arg[3]=%u arg[4]=%u arg[5]=%u", 
-    //   (uint8_t)args[0], (uint32_t)args[0], (uint32_t)args[1], (uint32_t)args[2], (uint32_t)args[3], (uint32_t)args[4], (uint32_t)args[5]);
-	uint8_t oid = args[0];
-	struct dirzctl* d = oid_lookup(oid,command_config_dirzctl);
-    
-	if(args[3] == 0)
+    //sendf("debug_dirzctl oid=%c arg[0]=%u "
+    //"arg[1]=%u arg[2]=%u arg[3]=%u arg[4]=%u arg[5]=%u",
+    //(uint8_t)args[0],
+    //(uint32_t)args[0],
+    //(uint32_t)args[1], (uint32_t)args[2],
+    //(uint32_t)args[3], (uint32_t)args[4], (uint32_t)args[5]);
+    uint8_t oid = args[0];
+    struct dirzctl* d = oid_lookup(oid,command_config_dirzctl);
+
+    if(args[3] == 0)
     {
         d->r_stop = 1;
         return;
-    }    
+    }
     d->r_stop = 0;
-    deal_dirs(d,args[1], 1);    
-    d->n_ticks = (uint32_t)(((double)args[2] / 1000000) * CONFIG_CLOCK_FREQ) / 2; 
+    deal_dirs(d,args[1], 1);
+    d->n_ticks = (uint32_t)(((double)args[2] / 1000000) *
+    CONFIG_CLOCK_FREQ) / 2;
     d->r_steps = args[3] * 2;
     d->r_steps_fix = d->r_steps;
     d->time.waketime = timer_read_time() + d->n_ticks;
     sched_add_timer(&d->time);
 }
-DECL_COMMAND(command_run_dirzctl, "run_dirzctl oid=%c direct=%c step_us=%u step_cnt=%u");
+DECL_COMMAND(command_run_dirzctl,
+    "run_dirzctl oid=%c direct=%c step_us=%u step_cnt=%u");
 
-void 
+void
 dirzctl_task(void)
 {
-	uint8_t oid;
+    uint8_t oid;
 
-	struct dirzctl* d;
+    struct dirzctl* d;
 
-	if(!sched_check_wake(&dirzctl_wake))
-	{
-		return;
-	}
-	
-	foreach_oid(oid,d,command_config_dirzctl)
-	{
+    if(!sched_check_wake(&dirzctl_wake))
+    {
+        return;
+    }
 
-		if(d->a_finish == 0)
-		{
-			return;
-		}
+    foreach_oid(oid,d,command_config_dirzctl)
+    {
 
-		sendf("result_dirzctl oid=%c step=%u tick=%u", (uint8_t)d->oid, (uint16_t)d->a_steps, (uint32_t)d->a_ticks);
-		
-		d->a_finish = 0;
-	}
-	return;
+        if(d->a_finish == 0)
+        {
+            return;
+        }
+
+        sendf("result_dirzctl oid=%c step=%u tick=%u",
+            (uint8_t)d->oid, (uint16_t)d->a_steps, (uint32_t)d->a_ticks);
+        d->a_finish = 0;
+    }
+    return;
 }
 DECL_TASK(dirzctl_task);
 
-void 
+void
 dirzctl_shutdown(void)
 {
-	uint8_t oid;
+    uint8_t oid;
 
-	struct dirzctl* d;
+    struct dirzctl* d;
 
-	foreach_oid(oid,d,command_config_dirzctl)
-	{
-		d->a_finish = 0;
-	}
+    foreach_oid(oid,d,command_config_dirzctl)
+    {
+        d->a_finish = 0;
+    }
 
-	return;
+    return;
 }
 
 DECL_SHUTDOWN(dirzctl_shutdown);
-

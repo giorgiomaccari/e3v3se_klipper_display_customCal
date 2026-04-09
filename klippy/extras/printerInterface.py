@@ -247,7 +247,7 @@ class PrinterData:
             if (file.startswith(self.subdirPath)):
                 name = path[self.subdirIndex]
                 if len(path) > self.subdirIndex + 1:
-                    if not name in self.subdirs:
+                    if name not in self.subdirs:
                         self.subdirs.append(name)  # add to checked subdirs
                         self.names.append(name)  # add only the name
                         self.fl.append(file)  # add full filepath
@@ -412,17 +412,18 @@ class PrinterData:
     def preheat(self, profile):
         if profile == "PLA":
             self.preHeat(
-                self.material_preset[0].bed_temp, self.material_preset[0].hotend_temp
-            )
+                self.material_preset[0].bed_temp,
+                self.material_preset[0].hotend_temp)
         elif profile == "ABS":
             self.preHeat(
-                self.material_preset[1].bed_temp, self.material_preset[1].hotend_temp
-            )
+                self.material_preset[1].bed_temp,
+                self.material_preset[1].hotend_temp)
 
     def preHeat(self, bedtemp, exttemp, toolnum=0):
         # these work but invoke a wait which hangs the screen until they finish.
-        # 		self.sendGCode('M140 S%s\nM190 S%s' % (bedtemp, bedtemp))
-        # 		self.sendGCode('M104 T%s S%s\nM109 T%s S%s' % (toolnum, exttemp, toolnum, exttemp))
+        # self.sendGCode('M140 S%s\nM190 S%s' % (bedtemp, bedtemp))
+        # self.sendGCode('M104 T%s S%s\nM109 T%s S%s' %
+        # (toolnum, exttemp, toolnum, exttemp))
         self.setBedTemp(bedtemp)
         self.setExtTemp(exttemp)
 
@@ -479,7 +480,9 @@ class PrinterData:
                                 seconds = match.group(
                                     3) if match.group(3) else "00"
                                 # Format as --h--m--s
-                                self.metadata['estimated_time'] = f"{hours}h{minutes}m{seconds}s" if hours else f'{minutes}m{seconds}s'
+                                self.metadata['estimated_time'] = f"{hours} h{
+                                    minutes} m{seconds} s"if hours else f'{
+                                    minutes} m{seconds} s'
 
                         elif "filament used [mm]" in line:
                             # Extract the value
