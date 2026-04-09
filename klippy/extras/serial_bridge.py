@@ -126,7 +126,7 @@ class PrinterSerialBridge:
         self.callbacks.append(callback)
 
     def chunkstring(self, msg, length):
-        return (msg[0+i:length+i] for i in range(0, len(msg), length))
+        return (msg[0 + i:length + i] for i in range(0, len(msg), length))
 
     def send_text(self, msg):
         self.send_serial(msg.encode('utf-8'))

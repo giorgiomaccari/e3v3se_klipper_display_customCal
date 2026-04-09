@@ -125,7 +125,8 @@ class TJC3224_LCD:
         Sends the current contents of the data frame, followed by a predefined
         tail sequence. After sending, the data frame is reset to the head sequence.
         """
-        # Write the current data frame and tail sequence to the serial connection
+        # Write the current data frame and tail sequence to the serial
+        # connection
         self.serial.write(self.data_frame)
         self.serial.write(self.data_frame_tail)
 
@@ -160,7 +161,8 @@ class TJC3224_LCD:
         self.byte(min(brightness, 0x40))
         self.send()
 
-    def set_palette(self, background_color=color_black, foreground_color=color_white):
+    def set_palette(self, background_color=color_black,
+                    foreground_color=color_white):
         """
         Set the palette colors for drawing functions.
 

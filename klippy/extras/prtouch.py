@@ -157,7 +157,8 @@ class PRTouchZOffsetWrapper:
             pass
 
     def _get_linear2(self, p1, p2, po, is_base_x):
-        if (math.fabs(p1[0] - p2[0]) < 0.001 and is_base_x) or (math.fabs(p1[1] - p2[1]) < 0.001 and not is_base_x):
+        if (math.fabs(p1[0] - p2[0]) < 0.001 and is_base_x) or (
+                math.fabs(p1[1] - p2[1]) < 0.001 and not is_base_x):
             return po
         a = (p2[2] - p1[2]) / ((p2[0] - p1[0])
                                if is_base_x else (p2[1] - p1[1]))
@@ -165,13 +166,14 @@ class PRTouchZOffsetWrapper:
         po[2] = a * (po[0] if is_base_x else po[1]) + b
         return po
 
-    def _pnt_tri_msg(self, index, msg,  ary):
+    def _pnt_tri_msg(self, index, msg, ary):
         if self.cfg.show_msg:
             self.pnt_msg('TRI SUCCESS BY: ' + msg)
             self.pnt_array('TRI CH=%d ARY=' % index, ary)
         pass
 
-    def _check_trigger(self, arg_index, fit_vals, unfit_vals, min_hold, max_hold):
+    def _check_trigger(self, arg_index, fit_vals,
+                       unfit_vals, min_hold, max_hold):
         all_params, tick = self.obj.dirzctl.get_params()
         if len(all_params) == 2:
             self._pnt_tri_msg(arg_index, 'Tri by Dirzctl run over!', fit_vals)
@@ -185,7 +187,8 @@ class PRTouchZOffsetWrapper:
         if len(fit_vals) != self.cfg.pi_count:
             return False
         for i in range(1, self.cfg.pi_count - 1):
-            if fit_vals_t[i] >= max_hold and fit_vals_t[i - 1] < (max_hold / 2) and fit_vals_t[i + 1] < (max_hold / 2):
+            if fit_vals_t[i] >= max_hold and fit_vals_t[i -
+                                                        1] < (max_hold / 2) and fit_vals_t[i + 1] < (max_hold / 2):
                 fit_vals_t[i] = fit_vals_t[i - 1]
 
         vals_p = [x for x in fit_vals_t]
@@ -209,16 +212,19 @@ class PRTouchZOffsetWrapper:
         if not (fit_vals_t[-1] > fit_vals_t[-2] > fit_vals_t[-3]):
             return False
         max_val = max(fit_vals_t[0:(self.cfg.pi_count - 3)])
-        if not ((fit_vals_t[-1] > max_val) and (fit_vals_t[-2] > max_val) and (fit_vals_t[-3] > max_val)):
+        if not ((fit_vals_t[-1] > max_val) and (fit_vals_t[-2]
+                > max_val) and (fit_vals_t[-3] > max_val)):
             return False
         max_val = max(fit_vals_t)
         min_val = min(fit_vals_t)
         for i in range(0, self.cfg.pi_count):
             fit_vals_t[i] = (fit_vals_t[i] - min_val) / (max_val - min_val)
         for i in range(0, self.cfg.pi_count - 1):
-            if (fit_vals_t[-1] - fit_vals_t[i]) / ((self.cfg.pi_count - i) * 1. / self.cfg.pi_count) < 0.8:
+            if (fit_vals_t[-1] - fit_vals_t[i]) / \
+                    ((self.cfg.pi_count - i) * 1. / self.cfg.pi_count) < 0.8:
                 return False
-        if fit_vals[-1] < min_hold or fit_vals[-2] < (min_hold / 2) or fit_vals[-3] < (min_hold / 3):
+        if fit_vals[-1] < min_hold or fit_vals[-2] < (
+                min_hold / 2) or fit_vals[-3] < (min_hold / 3):
             return False
         self._pnt_tri_msg(arg_index, 'Tri by fit all rule!', vals_p)
         return True
@@ -232,14 +238,16 @@ class PRTouchZOffsetWrapper:
         # self.obj.gcode.run_script_from_command('SET_PIN PIN=fan1 VALUE=%d' % (fan_spd))
         # self.obj.gcode.run_script_from_command('SET_PIN PIN=fan2 VALUE=%d' % (fan_spd))
         if wait:
-            while self.ck_sys_sta() and abs(self.obj.heater_hot.target_temp - self.obj.heater_hot.smoothed_temp) > err and self.obj.heater_hot.target_temp > 0:
+            while self.ck_sys_sta() and abs(self.obj.heater_hot.target_temp -
+                                            self.obj.heater_hot.smoothed_temp) > err and self.obj.heater_hot.target_temp > 0:
                 self.obj.hx711s.delay_s(0.100)
         pass
 
     def _set_bed_temps(self, temp, wait=False, err=5):
         self.obj.pheaters.set_temperature(self.obj.heater_bed, temp, False)
         if wait:
-            while self.ck_sys_sta() and abs(self.obj.heater_bed.target_temp - self.obj.heater_bed.smoothed_temp) > err and self.obj.heater_bed.target_temp > 0:
+            while self.ck_sys_sta() and abs(self.obj.heater_bed.target_temp -
+                                            self.obj.heater_bed.smoothed_temp) > err and self.obj.heater_bed.target_temp > 0:
                 self.obj.hx711s.delay_s(0.100)
         pass
 
@@ -254,7 +262,7 @@ class PRTouchZOffsetWrapper:
             # odd number of samples
             return z_sorted[middle]
         # even number of samples
-        return self._calc_mean(z_sorted[middle-1:middle+1])
+        return self._calc_mean(z_sorted[middle - 1:middle + 1])
 
     def pnt_msg(self, msg):
         logging.info(msg)
@@ -271,7 +279,8 @@ class PRTouchZOffsetWrapper:
             self.pnt_msg(st + ']')
         pass
 
-    def _probe_times(self, max_times, rdy_pos, speed_mm, min_dis_mm, max_z_err, min_hold, max_hold):
+    def _probe_times(self, max_times, rdy_pos, speed_mm,
+                     min_dis_mm, max_z_err, min_hold, max_hold):
         o_mm = 0
         rdy_pos_z = rdy_pos[2]
         now_pos = self.obj.toolhead.get_position()
@@ -293,7 +302,8 @@ class PRTouchZOffsetWrapper:
                 '***_probe_times must be reprobe= o_mm0=%.2f, o_mm1=%.2f' % (o_mm0, o_mm1))
         return o_mm
 
-    def clear_nozzle(self, hot_min_temp, hot_max_temp, bed_max_temp, min_hold, max_hold):
+    def clear_nozzle(self, hot_min_temp, hot_max_temp,
+                     bed_max_temp, min_hold, max_hold):
         min_x, min_y = self.cfg.clr_noz_start_x, self.cfg.clr_noz_start_y
         max_x, max_y = self.cfg.clr_noz_start_x + \
             self.cfg.clr_noz_len_x, self.cfg.clr_noz_start_y + self.cfg.clr_noz_len_y
@@ -346,7 +356,8 @@ class PRTouchZOffsetWrapper:
         if dirzctl_params is None or len(dirzctl_params) != 2:
             raise self.obj.printer.command_error(
                 """{"code":"key502", "msg":"probe_by_step: Can not recv stepper-z status."}""")
-        if len(hx711_vals) < self.cfg.pi_count or len(hx711_params) < self.cfg.pi_count:
+        if len(hx711_vals) < self.cfg.pi_count or len(
+                hx711_params) < self.cfg.pi_count:
             up_all_cnt = dirzctl_params[0]['step'] - \
                 dirzctl_params[1]['step'] + 1
             return up_all_cnt, up_all_cnt, False
@@ -386,7 +397,8 @@ class PRTouchZOffsetWrapper:
         up_all_cnt = up_all_cnt if up_all_cnt < limt_up_cnt else limt_up_cnt
         return (up_min_cnt if up_min_cnt >= 0 else 0), up_all_cnt, True
 
-    def probe_by_step(self, rdy_pos, speed_mm, min_dis_mm, min_hold, max_hold, up_after=True):
+    def probe_by_step(self, rdy_pos, speed_mm, min_dis_mm,
+                      min_hold, max_hold, up_after=True):
         self.obj.hx711s.read_base(int(self.cfg.base_count / 2), max_hold)
         step_cnt = int(
             min_dis_mm / (self.obj.dirzctl.steppers[0].get_step_dist() * self.obj.dirzctl.step_base))
@@ -413,7 +425,8 @@ class PRTouchZOffsetWrapper:
                 self.obj.hx711s.s_count, all_valss, self.obj.filter.hft_hz, self.obj.filter.lft_k1, self.cfg.pi_count)
 
             for i in range(self.obj.hx711s.s_count):
-                if not self._check_trigger(i, tmp_fit_vals[i], tmp_unfit_vals[i], min_hold, max_hold):
+                if not self._check_trigger(
+                        i, tmp_fit_vals[i], tmp_unfit_vals[i], min_hold, max_hold):
                     continue
                 self.obj.dirzctl.check_and_run(0, 0, 0, wait_finish=False)
                 self.obj.hx711s.query_start(

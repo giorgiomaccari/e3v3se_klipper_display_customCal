@@ -89,9 +89,11 @@ class DirZCtl:
         pass
 
     def get_params(self):
-        return self.all_params, (self.all_params[0]['tick'] if len(self.all_params) > 0 else 0)
+        return self.all_params, (self.all_params[0]['tick'] if len(
+            self.all_params) > 0 else 0)
 
-    def check_and_run(self, direct, step_us, step_cnt, wait_finish=True, is_ck_con=False):
+    def check_and_run(self, direct, step_us, step_cnt,
+                      wait_finish=True, is_ck_con=False):
         if self.is_shutdown or self.is_timeout:
             pass
         if step_cnt != 0:
@@ -99,7 +101,8 @@ class DirZCtl:
         # self.run_cmd.send([self.oid, direct, step_us, step_cnt, 1 if is_ck_con else 0])
         self.run_cmd.send([self.oid, direct, step_us, step_cnt])
         t_start = time.time()
-        while not (self.is_shutdown or self.is_timeout) and wait_finish and ((time.time() - t_start) < (1.5 * 1000 * 1000 * step_us * step_cnt)) and len(self.all_params) != 2:
+        while not (self.is_shutdown or self.is_timeout) and wait_finish and ((time.time(
+        ) - t_start) < (1.5 * 1000 * 1000 * step_us * step_cnt)) and len(self.all_params) != 2:
             self.hx711s.delay_s(0.05)
         pass
 

@@ -98,7 +98,8 @@ class HX711S:
             self.delay_s(0.001)
         self.start_tick = self.start_tick if len(
             self.all_params) != 0 else params['nt']
-        if self.del_dirty and (params['vd'] != 0 or params['it'] > 20) and self.index_dirty == 0:
+        if self.del_dirty and (
+                params['vd'] != 0 or params['it'] > 20) and self.index_dirty == 0:
             self.index_dirty = 1
             return
         self.index_dirty -= 1 if self.index_dirty == 1 else 0
@@ -113,7 +114,8 @@ class HX711S:
                 del self.all_vals[i][0]
         pass
 
-    def query_start(self, pi_count, cycle_count, del_dirty=False, show_msg=False, is_ck_con=False):
+    def query_start(self, pi_count, cycle_count, del_dirty=False,
+                    show_msg=False, is_ck_con=False):
         if self.is_shutdown or self.is_timeout:
             pass
         if cycle_count != 0:
@@ -164,7 +166,8 @@ class HX711S:
             avgs = [0, 0, 0, 0]
             self.query_start(cnt, cnt + 5, del_dirty=True, show_msg=False)
             t_last = time.time()
-            while not (self.is_shutdown or self.is_timeout) and len(self.get_vals()[0]) < cnt and (time.time() - t_last) < cnt * 0.010 * 15:
+            while not (self.is_shutdown or self.is_timeout) and len(
+                    self.get_vals()[0]) < cnt and (time.time() - t_last) < cnt * 0.010 * 15:
                 self.delay_s(0.010)
                 pass
             vals = self.get_vals()

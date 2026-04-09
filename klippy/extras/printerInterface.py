@@ -303,7 +303,8 @@ class PrinterData:
         fanSpeed = fan['speed'] * 100
         Update = False
         try:
-            if self.thermalManager["temp_bed"]["celsius"] != int(bed["temperature"]):
+            if self.thermalManager["temp_bed"]["celsius"] != int(
+                    bed["temperature"]):
                 self.thermalManager["temp_bed"]["celsius"] = int(
                     bed["temperature"])
                 Update = True
@@ -340,8 +341,9 @@ class PrinterData:
                 self.BABY_Z_VAR = z_offset
                 self.HMI_ValueStruct.offset_value = z_offset * 100
                 Update = True
-        except:
-            # missing key, shouldn't happen, fixes misses on conditionals ¯\_(ツ)_/¯
+        except BaseException:
+            # missing key, shouldn't happen, fixes misses on conditionals
+            # ¯\_(ツ)_/¯
             pass
         self.job_Info = self.printer.lookup_object(
             "print_stats").get_status(self.reactor.monotonic())
@@ -432,7 +434,8 @@ class PrinterData:
     def nozzleIsHeating(self):
         extruder = self.printer.lookup_object(
             "extruder").get_status(self.reactor.monotonic())
-        return (int(extruder["target"]) > int(extruder["temperature"])) if extruder else False
+        return (int(extruder["target"]) > int(
+            extruder["temperature"])) if extruder else False
 
     def openFile(self, file):
         self.selectedFile = file
@@ -460,7 +463,9 @@ class PrinterData:
                             # Extract the value
                             match = re.search(r"(\d+\.\d+)", line)
                             if match:
-                                self.metadata['layer_height'] = f"{float(match.group(1))}mm"
+                                self.metadata['layer_height'] = f"{
+                                    float(
+                                        match.group(1))}mm"
 
                         elif "estimated printing time" in line:
                             # Extract hours, minutes, and seconds
@@ -482,7 +487,11 @@ class PrinterData:
                                 r"filament used \[mm\] = (\d+\.\d+)", line)
                             if match:
                                 filament_used_mm = float(match.group(1))
-                                self.metadata['filament_used'] = f"{round(filament_used_mm / 1000, 2)}m"
+                                self.metadata['filament_used'] = f"{
+                                    round(
+                                        filament_used_mm /
+                                        1000,
+                                        2)}m"
 
                     if "; EXECUTABLE_BLOCK_END" in line:
                         executable_block_end = True

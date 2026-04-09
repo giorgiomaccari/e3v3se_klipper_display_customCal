@@ -76,7 +76,7 @@ class E3V3SEMenuKeys(MenuKeys):
         if encoder_pins is not None:
             try:
                 pin1, pin2 = encoder_pins.split(',')
-            except:
+            except BaseException:
                 raise config.error("Unable to parse encoder_pins")
             buttons.register_rotary_encoder(pin1.strip(), pin2.strip(),
                                             self.encoder_cw_callback,
@@ -90,9 +90,10 @@ class E3V3SEMenuKeys(MenuKeys):
         self.is_short_click = False
         self.click_timer = self.reactor.register_timer(self.long_click_event)
         self.register_click_button(
-            config, 'click_pin', self.click_callback, False,  '^!PB1')
+            config, 'click_pin', self.click_callback, False, '^!PB1')
 
-    def register_click_button(self, config, name, callback, push_only=True, default_value=None,):
+    def register_click_button(
+            self, config, name, callback, push_only=True, default_value=None,):
         pin = config.get(name, default_value)
         if pin is None:
             return
@@ -691,7 +692,7 @@ class E3v3seDisplay:
             self.manual_probe = self.printer.lookup_object("manual_probe")
             if self.manual_probe is not None:
                 return self.manual_probe.status["is_active"]
-        except:
+        except BaseException:
             pass
 
         return False
@@ -783,7 +784,8 @@ class E3v3seDisplay:
 
         fullCnt = len(self.pd.GetFiles())
 
-        if (encoder_state == self.ENCODER_DIFF_CW or encoder_state == self.ENCODER_DIFF_FAST_CW) and fullCnt:
+        if (encoder_state == self.ENCODER_DIFF_CW or encoder_state ==
+                self.ENCODER_DIFF_FAST_CW) and fullCnt:
             if self.select_file.inc(1 + fullCnt):
                 itemnum = self.select_file.now - 1  # -1 for "Back"
                 if (
@@ -844,7 +846,8 @@ class E3v3seDisplay:
 
         custom_macro_count = len(self.custom_macros)
 
-        if (encoder_state == self.ENCODER_DIFF_CW or encoder_state == self.ENCODER_DIFF_FAST_CW) and custom_macro_count:
+        if (encoder_state == self.ENCODER_DIFF_CW or encoder_state ==
+                self.ENCODER_DIFF_FAST_CW) and custom_macro_count:
             if self.select_misc.inc(1 + custom_macro_count):
                 index = self.select_misc.now - 1  # -1 for "Back"
                 if self.select_misc.now > self.MROWS and self.select_misc.now > self.index_misc:
@@ -1206,7 +1209,7 @@ class E3v3seDisplay:
 
     def HMI_ManualProbe(self):
         encoder_state = self.get_encoder_state()
-        if encoder_state == self.ENCODER_DIFF_NO or self.manual_probe == None:
+        if encoder_state == self.ENCODER_DIFF_NO or self.manual_probe is None:
             return
 
         step = self.MANUAL_PROBE_STEPS[self.manual_probe_step_index]
@@ -1436,7 +1439,8 @@ class E3v3seDisplay:
         # In case of "nozzle too cold" popup is on the screen
         if self.pd.PREVENT_COLD_EXTRUSION:
             if self.pd.HMI_flag.ETempTooLow_flag:
-                # Resuming after "nozzle too cold" popup should clear the flag and draw move menu again
+                # Resuming after "nozzle too cold" popup should clear the flag
+                # and draw move menu again
                 if encoder_state == self.ENCODER_DIFF_ENTER:
                     self.pd.HMI_flag.ETempTooLow_flag = False
                     self.pd.current_position.e = (
@@ -1517,7 +1521,8 @@ class E3v3seDisplay:
                 )
                 self.EncoderRateLimit = False
             elif selected_line == 4:  # Extruder
-                # Check if nozzle is too cold and don't allow extrusion. Popup warning instead
+                # Check if nozzle is too cold and don't allow extrusion. Popup
+                # warning instead
                 if self.pd.PREVENT_COLD_EXTRUSION:
                     if (
                         self.pd.thermalManager["temp_hotend"][0]["celsius"]
@@ -3157,7 +3162,8 @@ class E3v3seDisplay:
         # self.Frame_TitleCopy(1, 128, 2, 176, 12)
         # self.lcd.move_screen_area(1, 1, 89, 83, 101, self.LBLX, self.MBASE(self.CONTROL_CASE_TEMP))  # Temperature >
         # self.lcd.move_screen_area(1, 84, 89, 128, 99, self.LBLX, self.MBASE(self.CONTROL_CASE_MOVE))  # Motion >
-        # self.lcd.move_screen_area(1, 0, 104, 25, 115, self.LBLX, self.MBASE(self.CONTROL_CASE_INFO))  # Info >
+        # self.lcd.move_screen_area(1, 0, 104, 25, 115, self.LBLX,
+        # self.MBASE(self.CONTROL_CASE_INFO))  # Info >
 
         if self.select_control.now and self.select_control.now < self.MROWS:
             self.Draw_Menu_Cursor(self.select_control.now)
@@ -3668,8 +3674,9 @@ class E3v3seDisplay:
             self.pd.current_position.e * self.MINUNITMULT,
         )
 
-    def Draw_Manual_Probe_Menu(self, draw_static_elements=False, draw_error=False):
-        if self.manual_probe == None or self.manual_probe.status["is_active"] == False:
+    def Draw_Manual_Probe_Menu(
+            self, draw_static_elements=False, draw_error=False):
+        if self.manual_probe is None or self.manual_probe.status["is_active"] == False:
             self.Goto_MainMenu()
             return
 
@@ -3765,7 +3772,8 @@ class E3v3seDisplay:
         # Draw the current offset
         line_count += 2
         if not draw_static_elements:
-            # No need to clear the region, as the caller will clear the whole screen
+            # No need to clear the region, as the caller will clear the whole
+            # screen
             self.lcd.draw_rectangle(
                 1,
                 self.color_background_black,
@@ -4044,7 +4052,8 @@ class E3v3seDisplay:
         self.lcd.draw_rectangle(
             0, self.color_white, 15, self.HEADER_HEIGHT + 50, 225, 195
         )
-        # Draw text with "Feature not available on the screen. Please use klipper"
+        # Draw text with "Feature not available on the screen. Please use
+        # klipper"
         self.lcd.draw_string(
             False,
             self.lcd.font_8x8,
@@ -4128,7 +4137,8 @@ class E3v3seDisplay:
             self.lcd.draw_rectangle(0, self.color_white, 80, y, 160, y + 31)
         except Exception as e:
             # I imagine that on an extreme scenario where firmware_restart is called and this tries to communicate with the LCD
-            # This could error out, very unlikely scenario, but either way it's better to catch it and log it
+            # This could error out, very unlikely scenario, but either way it's
+            # better to catch it and log it
             self.error("Error in show_popup: %s" % e)
 
     def Erase_Menu_Cursor(self, line):
@@ -4496,12 +4506,14 @@ class E3v3seDisplay:
             self.Draw_Status_Area(update)
 
         # Check for errors and/or incoming messages
-        if self.display_status is not None and self.display_status.message and len(self.display_status.message) > 0 and self.last_display_status != self.display_status.message:
+        if self.display_status is not None and self.display_status.message and len(
+                self.display_status.message) > 0 and self.last_display_status != self.display_status.message:
             self.show_popup(self.display_status.message)
             self.last_display_status = self.display_status.message
 
         self.time_since_movement += 1
-        if (self.time_since_movement >= self.display_dim_timeout) & (not self.is_dimmed):
+        if (self.time_since_movement >= self.display_dim_timeout) & (
+                not self.is_dimmed):
             self.lcd.set_backlight_brightness(5)
             self.is_dimmed = True
         elif (self.time_since_movement < self.display_dim_timeout) & (self.is_dimmed):
