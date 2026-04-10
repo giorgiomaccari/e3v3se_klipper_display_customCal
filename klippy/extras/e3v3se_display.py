@@ -1346,9 +1346,10 @@ class E3v3seDisplay:
             or encoder_state == self.ENCODER_DIFF_FAST_CW
         ):
             if math.floor(current_pos - step) <= min_z:
-                self.error(f"Ignoring move '{
-                        current_pos -
-                        step}' as it is lower than Z limit '{min_z}'!")
+                self.error("Ignoring move " + \
+                           f"'{current_pos - step}'" + \
+                           "as it is lower than Z limit" +\
+                           f"'{min_z}'!")
                 error = True
             else:
                 self.gcode.run_script_from_command(f"TESTZ Z=-{step}")
@@ -1359,9 +1360,10 @@ class E3v3seDisplay:
         ):
             step = self.MANUAL_PROBE_STEPS[self.manual_probe_step_index]
             if math.ceil(current_pos + step) >= max_z:
-                self.error(f"Ignoring move '{
-                        current_pos +
-                        step}' as it is greater than Z limit '{max_z}'!")
+                self.error("Ignoring move " + \
+                           f"'{current_pos + step}'" + \
+                           "as it is greater than Z limit" +\
+                           f"'{max_z}'!")
                 error = True
             else:
                 self.gcode.run_script_from_command(f"TESTZ Z={step}")
