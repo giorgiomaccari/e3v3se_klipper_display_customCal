@@ -11,6 +11,8 @@
 
 #define HX711S_SAMPLE_PERIOD_TICKS (CONFIG_CLOCK_FREQ / 10000 * 125)
 #define HX711S_SAMPLE_REST_TICKS (HX711S_SAMPLE_PERIOD_TICKS / 2)
+// Divide clock freq by 1000 at compile time to get ticks per millisecond
+#define TICKS_PER_MS (CONFIG_CLOCK_FREQ / 1000)
 
 struct hx711s
 {
@@ -74,8 +76,10 @@ get_hx711s(struct hx711s* h)
 
     uint64_t now_tick = timer_read_time();
     now_tick += (now_tick < last_tick ? 0xFFFFFFFF : 0);
-    uint64_t now_inter_ms =
-    (now_tick - last_tick) * 1000.0f / CONFIG_CLOCK_FREQ;
+    // Divide by compile-time constant TICKS_PER_MS (240,000 for 240MHz)
+    // This uses 32-bit division, much cheaper than 64-bit (__udivdi4)
+    uint32_t delta_ticks = (uint32_t)(now_tick - last_tick);
+    uint32_t now_inter_ms = delta_ticks / TICKS_PER_MS;
 
     //if (is_data_valid == 0 || now_inter_ms >= 25)
     if (is_data_valid == 0)

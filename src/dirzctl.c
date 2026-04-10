@@ -10,6 +10,9 @@
 #include <string.h>
 
 #define TICKS_LEN 32
+// Precompute ticks per microsecond at compile time to avoid runtime division
+// Formula: (CONFIG_CLOCK_FREQ / 1000000) / 2
+#define TICKS_PER_US_HALF ((CONFIG_CLOCK_FREQ / 1000000) / 2)
 
 struct dirzctl
 {
@@ -70,7 +73,7 @@ static void
 send_status(struct dirzctl *d)
 {
     d->a_ticks = timer_read_time();
-    d->a_steps = (d->r_steps - (d->r_steps % 2)) / 2;
+    d->a_steps = (d->r_steps >> 1);
     d->a_finish = 1;
 }
 
@@ -82,7 +85,7 @@ dirzctl_event(struct timer *t)
     sched_wake_task(&dirzctl_wake);
     deal_steps(d);
     d->r_steps--;
-    if((d->r_steps == 0) || ((d->r_steps % 2 == 0) && (d->r_stop == 1)))
+    if((d->r_steps == 0) || ((!(d->r_steps & 1)) && (d->r_stop == 1)))
     {
         sched_del_timer(&d->time);
         send_status(d);
@@ -165,8 +168,9 @@ command_run_dirzctl(uint32_t *args)
     }
     d->r_stop = 0;
     deal_dirs(d,args[1], 1);
-    d->n_ticks = (uint32_t)(((double)args[2] / 1000000) *
-    CONFIG_CLOCK_FREQ) / 2;
+    // No division: TICKS_PER_US_HALF computed at compile time
+    d->n_ticks = args[2] * TICKS_PER_US_HALF;
+
     d->r_steps = args[3] * 2;
     d->r_steps_fix = d->r_steps;
     d->time.waketime = timer_read_time() + d->n_ticks;
