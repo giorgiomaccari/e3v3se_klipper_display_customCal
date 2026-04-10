@@ -527,6 +527,11 @@ choice
         depends on HAVE_STM32_FDCANBUS
 endchoice
 
+config E3V3_CRTOUCH
+    bool "Enable Ender 3 V3 CRTouch" if LOW_LEVEL_OPTIONS
+    depends on MACH_STM32
+    default n
+
 config SERIAL_BRIDGE
     bool "Enable serial bridge" if LOW_LEVEL_OPTIONS
     depends on MACH_STM32
