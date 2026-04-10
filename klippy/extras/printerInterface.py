@@ -464,9 +464,8 @@ class PrinterData:
                             # Extract the value
                             match = re.search(r"(\d+\.\d+)", line)
                             if match:
-                                self.metadata['layer_height'] = f"{
-                                    float(
-                                        match.group(1))}mm"
+                                self.metadata['layer_height'] = \
+                                f"{float(match.group(1))}mm"
 
                         elif "estimated printing time" in line:
                             # Extract hours, minutes, and seconds
@@ -480,9 +479,10 @@ class PrinterData:
                                 seconds = match.group(
                                     3) if match.group(3) else "00"
                                 # Format as --h--m--s
-                                self.metadata['estimated_time'] = f"{hours} h{
-                                    minutes} m{seconds} s"if hours else f'{
-                                    minutes} m{seconds} s'
+                                self.metadata['estimated_time'] = \
+                                f"{hours} h{minutes} m{seconds} s" \
+                                if hours else \
+                                f'{minutes} m{seconds} s'
 
                         elif "filament used [mm]" in line:
                             # Extract the value
