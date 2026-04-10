@@ -1,0 +1,38 @@
+# Perform continuous integration tests on updates and pull requests
+name: testtestBuild Firmwaretestest
+on: workflow_dispatch
+
+jobs:
+  build:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup cache
+        uses: actions/cache@v4
+        with:
+          path: ci_cache
+          key: ${{ runner.os }}-build-${{ hashFiles('scripts/edited-ci-install.sh') }}
+          restore-keys: |
+            ${{ runner.OS }}-build-
+      - name: Prepare build
+        run: ./scripts/edited-ci-install.sh
+
+      - name: Build
+        run: ./scripts/edited-ci-build.sh 2>&1
+
+      - name: Upload build
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware
+          path: ci_build/output
+
+      - name: Commit and push .bin file
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add ci_build/output/*.bin  # Adjust the path as necessary
+          git commit -m 'Add built .bin file'
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
