@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 Important: This file is imported from the DWIN_T5UIC1_LCD
 repository available on (https://github.com/odwdinc/DWIN_T5UIC1_LCD)
