@@ -480,9 +480,9 @@ class PrinterData:
                                     3) if match.group(3) else "00"
                                 # Format as --h--m--s
                                 self.metadata['estimated_time'] = \
-                                f"{hours} h{minutes} m{seconds} s" \
+                                "%sh %sm %ss" % (hours, minutes, seconds) \
                                 if hours else \
-                                f'{minutes} m{seconds} s'
+                                "%sm %ss" % (minutes, seconds)
 
                         elif "filament used [mm]" in line:
                             # Extract the value
@@ -491,13 +491,13 @@ class PrinterData:
                             if match:
                                 filament_used_mm = float(match.group(1))
                                 self.metadata['filament_used'] = \
-                                f"{round(filament_used_mm / 1000, 2)}m"
+                                "%.2fm" % (filament_used_mm / 1000)
 
                     if "; EXECUTABLE_BLOCK_END" in line:
                         executable_block_end = True
 
         except FileNotFoundError:
-            self.log(f"Unable to find file: {fileDir}")
+            self.log("Unable to find file: %s" % fileDir)
 
     def sendGCode(self, Gcode):
         self.gcode._process_commands([Gcode])
