@@ -490,11 +490,8 @@ class PrinterData:
                                 r"filament used \[mm\] = (\d+\.\d+)", line)
                             if match:
                                 filament_used_mm = float(match.group(1))
-                                self.metadata['filament_used'] = f"{
-                                    round(
-                                        filament_used_mm /
-                                        1000,
-                                        2)}m"
+                                self.metadata['filament_used'] = \
+                                f"{round(filament_used_mm / 1000, 2)}m"
 
                     if "; EXECUTABLE_BLOCK_END" in line:
                         executable_block_end = True
