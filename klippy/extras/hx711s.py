@@ -42,7 +42,9 @@ class HX711S:
         self.oid = self.mcu.create_oid()
         self.mcu.register_config_callback(self._build_config)
         self.mcu.register_serial_response(
-            self._handle_debug_hx711s, "debug_hx711s", self.oid
+            self._handle_debug_hx711s,
+            "debug_hx711s oid=%c arg[0]=%u arg[1]=%u arg[2]=%u arg[3]=%u",
+            self.oid
         )
         self.mcu.register_serial_response(
             self._handle_result_hx711s, "result_hx711s", self.oid
