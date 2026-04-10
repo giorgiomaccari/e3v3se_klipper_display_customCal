@@ -7,6 +7,7 @@ from .TJC3224 import TJC3224_LCD
 from .printerInterface import PrinterData
 from .serial_bridge import PrinterSerialBridge
 
+
 def current_milli_time():
     return round(time.time() * 1000)
 
@@ -53,6 +54,7 @@ class select_t:
             self.now = v - 1
         return self.changed()
 
+
 class E3V3SEMenuKeys(MenuKeys):
     """
     E3V3SEMenuKeys is a subclass of MenuKeys designed to
@@ -61,46 +63,61 @@ class E3V3SEMenuKeys(MenuKeys):
     This class defaults the pins for the menu keys to the corresponding
     pins of the ender 3 v3 se 3d printer.
     """
+
     def __init__(self, config, callback):
         self.printer = config.get_printer()
         self.reactor = self.printer.get_reactor()
         self.callback = callback
         buttons = self.printer.load_object(config, "buttons")
         # Register rotary encoder
-        encoder_pins = config.get('encoder_pins', '^PA12, ^PA11')
-        encoder_steps_per_detent = config.getchoice('encoder_steps_per_detent',
-                                                    {2: 2, 4: 4}, 4)
+        encoder_pins = config.get("encoder_pins", "^PA12, ^PA11")
+        encoder_steps_per_detent = config.getchoice(
+            "encoder_steps_per_detent", {2: 2, 4: 4}, 4
+        )
         if encoder_pins is not None:
             try:
-                pin1, pin2 = encoder_pins.split(',')
-            except:
+                pin1, pin2 = encoder_pins.split(",")
+            except BaseException:
                 raise config.error("Unable to parse encoder_pins")
-            buttons.register_rotary_encoder(pin1.strip(), pin2.strip(),
-                                            self.encoder_cw_callback,
-                                            self.encoder_ccw_callback,
-                                            encoder_steps_per_detent)
-        self.encoder_fast_rate = config.getfloat('encoder_fast_rate',
-                                                 .030, above=0.)
+            buttons.register_rotary_encoder(
+                pin1.strip(),
+                pin2.strip(),
+                self.encoder_cw_callback,
+                self.encoder_ccw_callback,
+                encoder_steps_per_detent,
+            )
+        self.encoder_fast_rate = config.getfloat(
+            "encoder_fast_rate", 0.030, above=0.0
+        )
         self.last_encoder_cw_eventtime = 0
         self.last_encoder_ccw_eventtime = 0
         # Register click button
         self.is_short_click = False
         self.click_timer = self.reactor.register_timer(self.long_click_event)
-        self.register_click_button(config, 'click_pin', self.click_callback, False,  '^!PB1')
+        self.register_click_button(
+            config, "click_pin", self.click_callback, False, "^!PB1"
+        )
 
-    def register_click_button(self, config, name, callback, push_only=True, default_value=None,):
+    def register_click_button(
+        self,
+        config,
+        name,
+        callback,
+        push_only=True,
+        default_value=None,
+    ):
         pin = config.get(name, default_value)
         if pin is None:
             return
         buttons = self.printer.lookup_object("buttons")
-        if config.get('analog_range_' + name, None) is None:
+        if config.get("analog_range_" + name, None) is None:
             if push_only:
                 buttons.register_button_push(pin, callback)
             else:
                 buttons.register_buttons([pin], callback)
             return
-        amin, amax = config.getfloatlist('analog_range_' + name, count=2)
-        pullup = config.getfloat('analog_pullup_resistor', 4700., above=0.)
+        amin, amax = config.getfloatlist("analog_range_" + name, count=2)
+        pullup = config.getfloat("analog_pullup_resistor", 4700.0, above=0.0)
         if push_only:
             buttons.register_adc_button_push(pin, amin, amax, pullup, callback)
         else:
@@ -110,16 +127,18 @@ class E3V3SEMenuKeys(MenuKeys):
 class E3V3SEPrinterSerialBridge(PrinterSerialBridge):
     """
     E3V3SEPrinterSerialBridge is a subclass of PrinterSerialBridge designed to
-    customize initialization without modifying the original PrinterSerialBridge class.
+    customize initialization without modifying the original
+    PrinterSerialBridge class.
 
-    This class defaults the serial pins, baud, eol and serial bridge config to specific
-    values used for the ender 3 v3 se 3d printer.
+    This class defaults the serial pins, baud, eol and serial bridge config to
+    specific values used for the ender 3 v3 se 3d printer.
     """
+
     def __init__(self, config):
         self.callbacks = []
         self.printer = config.get_printer()
         self.name = config.get_name().split()[-1]
-        self.eol = config.get('eol', default='')
+        self.eol = config.get("eol", default="")
         self._ready = False
         self.baud = config.getint("baud", 115200)
         self.serial_config = config.getint("config", 3)
@@ -127,13 +146,14 @@ class E3V3SEPrinterSerialBridge(PrinterSerialBridge):
 
         self.reactor = self.printer.get_reactor()
         self.printer.register_event_handler("klippy:ready", self.handle_ready)
-        self.printer.register_event_handler("klippy:disconnect",
-            self.handle_disconnect)
+        self.printer.register_event_handler(
+            "klippy:disconnect", self.handle_disconnect
+        )
 
         ppins = self.printer.lookup_object("pins")
-        pin_params = ppins.lookup_pin(config.get("tx_pin", 'PA2'))
-        rx_pin_params = ppins.lookup_pin(config.get("rx_pin" , 'PA3'))
-        self.mcu = pin_params['chip']
+        pin_params = ppins.lookup_pin(config.get("tx_pin", "PA2"))
+        rx_pin_params = ppins.lookup_pin(config.get("rx_pin", "PA3"))
+        self.mcu = pin_params["chip"]
         self.oid = self.mcu.create_oid()
         self.mcu.register_config_callback(self.build_config)
 
@@ -156,16 +176,14 @@ class E3v3seDisplayMacro:
 
         gcode = config.get("gcode")
         label = config.get("label")
-        icon = config.getint("icon", 14) # Defaults to icon_file
+        icon = config.getint("icon", 14)  # Defaults to icon_file
 
-        parent.log("E3V3SE Display MACRO: id: '%s' label: '%s' icon: '%i' gcode: '%s'" % (id, label, icon, gcode))
+        parent.log("E3V3SE Display MACRO: id: '%s' \
+                label: '%s' icon: '%i' gcode: '%s'" % (id, label, icon, gcode))
 
-        parent.custom_macros.append({
-            "id": id,
-            "icon": icon,
-            "label": label,
-            "gcode": gcode
-        })
+        parent.custom_macros.append(
+            {"id": id, "icon": icon, "label": label, "gcode": gcode}
+        )
 
 
 class E3v3seDisplay:
@@ -298,7 +316,7 @@ class E3v3seDisplay:
         "italian": 19,
         "portuguese": 21,
         "japanese": 23,
-        "korean": 25
+        "korean": 25,
     }
 
     # ICON ID
@@ -590,15 +608,22 @@ class E3v3seDisplay:
         # Message popup feature
         self.display_status = None
         self.last_display_status = None
-        self.printer.register_event_handler("klippy:notify_mcu_error", self.handle_mcu_error)
+        self.printer.register_event_handler(
+            "klippy:notify_mcu_error", self.handle_mcu_error
+        )
 
         # Icon finder feature
-        self.gcode.register_command("ENDER_SE_DISPLAY_ICON_FINDER", self.cmd_IconFinder, desc="Icon Finder")
+        self.gcode.register_command(
+            "ENDER_SE_DISPLAY_ICON_FINDER",
+            self.cmd_IconFinder,
+            desc="Icon Finder",
+        )
 
         self.serial_bridge = E3V3SEPrinterSerialBridge(self.config)
 
         self.serial_bridge.register_callback(
-            self._handle_serial_bridge_response)
+            self._handle_serial_bridge_response
+        )
 
         self.lcd = TJC3224_LCD(self.serial_bridge)
         self.checkkey = self.MainMenu
@@ -608,17 +633,17 @@ class E3v3seDisplay:
         self._update_timer = self.reactor.register_timer(self.EachMomentUpdate)
 
     def key_event(self, key, eventtime):
-        if key == 'click':
+        if key == "click":
             self.encoder_state = self.ENCODER_DIFF_ENTER
-        elif key == 'long_click':
+        elif key == "long_click":
             self.encoder_state = self.ENCODER_DIFF_LONG_ENTER
-        elif key == 'up':
+        elif key == "up":
             self.encoder_state = self.ENCODER_DIFF_CCW
-        elif key == 'down':
+        elif key == "down":
             self.encoder_state = self.ENCODER_DIFF_CW
-        elif key == 'fast_up':
+        elif key == "fast_up":
             self.encoder_state = self.ENCODER_DIFF_FAST_CCW
-        elif key == 'fast_down':
+        elif key == "fast_down":
             self.encoder_state = self.ENCODER_DIFF_FAST_CW
 
         self.encoder_has_data()
@@ -629,7 +654,7 @@ class E3v3seDisplay:
         return last_state
 
     def _handle_serial_bridge_response(self, data):
-        byte_debug = ' '.join(['0x{:02x}'.format(byte) for byte in data])
+        byte_debug = " ".join(["0x{:02x}".format(byte) for byte in data])
         self.log("Received message: " + byte_debug)
 
     def cmd_IconFinder(self, gcmd):
@@ -647,19 +672,27 @@ class E3v3seDisplay:
 
     def _screen_init(self, eventtime):
         self.reactor.update_timer(
-            self._update_timer, eventtime + self._update_interval)
+            self._update_timer, eventtime + self._update_interval
+        )
         return self.reactor.NEVER
 
     def handle_ready(self):
         self.pd.handle_ready()
-        self.reactor.register_timer(self._reset_screen, self.reactor.monotonic())
+        self.reactor.register_timer(
+            self._reset_screen, self.reactor.monotonic()
+        )
 
         # Message popup feature
         try:
-            self.display_status = self.printer.lookup_object("display_status", default=None)
-            if self.display_status is None and "M117" not in self.gcode.ready_gcode_handlers:
+            self.display_status = self.printer.lookup_object(
+                "display_status", default=None
+            )
+            if (
+                self.display_status is None
+                and "M117" not in self.gcode.ready_gcode_handlers
+            ):
                 self.gcode.register_command("M117", self.cmd_M117)
-        except Exception as e: 
+        except Exception as e:
             self.error("Error registering M117: %s" % e)
 
     def handle_mcu_error(self):
@@ -669,11 +702,12 @@ class E3v3seDisplay:
         msg = gcmd.get_raw_command_parameters() or None
         if msg is not None:
             self.show_popup(msg)
-        
+
     def _reset_screen(self, eventtime):
         self.log("Reset")
         self.reactor.register_timer(
-            self._screen_init, self.reactor.monotonic() + 2.)
+            self._screen_init, self.reactor.monotonic() + 2.0
+        )
         return self.reactor.NEVER
 
     def is_manual_probe_active(self):
@@ -681,7 +715,7 @@ class E3v3seDisplay:
             self.manual_probe = self.printer.lookup_object("manual_probe")
             if self.manual_probe is not None:
                 return self.manual_probe.status["is_active"]
-        except:
+        except BaseException:
             pass
 
         return False
@@ -699,7 +733,12 @@ class E3v3seDisplay:
         if self.pd.status == "printing":
             self.Goto_PrintProcess()
             self.Draw_Status_Area(with_update)
-        elif self.pd.status in ["operational", "complete", "standby", "cancelled"]:
+        elif self.pd.status in [
+            "operational",
+            "complete",
+            "standby",
+            "cancelled",
+        ]:
             self.Goto_MainMenu()
         else:
             self.Goto_MainMenu()
@@ -708,7 +747,10 @@ class E3v3seDisplay:
         encoder_state = self.get_encoder_state()
         if encoder_state == self.ENCODER_DIFF_NO:
             return
-        if encoder_state == self.ENCODER_DIFF_CW or encoder_state == self.ENCODER_DIFF_FAST_CW:
+        if (
+            encoder_state == self.ENCODER_DIFF_CW
+            or encoder_state == self.ENCODER_DIFF_FAST_CW
+        ):
             if self.select_page.inc(4):
                 if self.select_page.now == 0:
                     self.icon_Print()
@@ -724,7 +766,10 @@ class E3v3seDisplay:
                         self.icon_Misc(True)
                     else:
                         self.icon_StartInfo(True)
-        elif encoder_state == self.ENCODER_DIFF_CCW or encoder_state == self.ENCODER_DIFF_FAST_CCW:
+        elif (
+            encoder_state == self.ENCODER_DIFF_CCW
+            or encoder_state == self.ENCODER_DIFF_FAST_CCW
+        ):
             if self.select_page.dec():
                 if self.select_page.now == 0:
                     self.icon_Print()
@@ -773,7 +818,10 @@ class E3v3seDisplay:
 
         fullCnt = len(self.pd.GetFiles())
 
-        if (encoder_state == self.ENCODER_DIFF_CW or encoder_state == self.ENCODER_DIFF_FAST_CW) and fullCnt:
+        if (
+            encoder_state == self.ENCODER_DIFF_CW
+            or encoder_state == self.ENCODER_DIFF_FAST_CW
+        ) and fullCnt:
             if self.select_file.inc(1 + fullCnt):
                 itemnum = self.select_file.now - 1  # -1 for "Back"
                 if (
@@ -789,7 +837,10 @@ class E3v3seDisplay:
                     self.Move_Highlight(
                         1, self.select_file.now + self.MROWS - self.index_file
                     )  # Just move highlight
-        elif (encoder_state == self.ENCODER_DIFF_CCW or encoder_state == self.ENCODER_DIFF_FAST_CCW) and fullCnt:
+        elif (
+            encoder_state == self.ENCODER_DIFF_CCW
+            or encoder_state == self.ENCODER_DIFF_FAST_CCW
+        ) and fullCnt:
             if self.select_file.dec():
                 itemnum = self.select_file.now - 1  # -1 for "Back"
                 if (
@@ -834,19 +885,30 @@ class E3v3seDisplay:
 
         custom_macro_count = len(self.custom_macros)
 
-        if (encoder_state == self.ENCODER_DIFF_CW or encoder_state == self.ENCODER_DIFF_FAST_CW) and custom_macro_count:
+        if (
+            encoder_state == self.ENCODER_DIFF_CW
+            or encoder_state == self.ENCODER_DIFF_FAST_CW
+        ) and custom_macro_count:
             if self.select_misc.inc(1 + custom_macro_count):
-                index = self.select_misc.now - 1 # -1 for "Back"
-                if self.select_misc.now > self.MROWS and self.select_misc.now > self.index_misc:
+                index = self.select_misc.now - 1  # -1 for "Back"
+                if (
+                    self.select_misc.now > self.MROWS
+                    and self.select_misc.now > self.index_misc
+                ):
                     # Cursor past the last item, scroll up
                     self.index_misc = self.select_misc.now
                     self.Scroll_Menu(self.scroll_up)
                     self.Draw_CustomMacroItem(index, self.MROWS)
                 else:
-                    self.Move_Highlight(1, self.select_misc.now + self.MROWS - self.index_misc)# Move highlight
-        elif (encoder_state == self.ENCODER_DIFF_CCW or encoder_state == self.ENCODER_DIFF_FAST_CCW) and custom_macro_count:
+                    self.Move_Highlight(
+                        1, self.select_misc.now + self.MROWS - self.index_misc
+                    )  # Move highlight
+        elif (
+            encoder_state == self.ENCODER_DIFF_CCW
+            or encoder_state == self.ENCODER_DIFF_FAST_CCW
+        ) and custom_macro_count:
             if self.select_misc.dec():
-                index = self.select_misc.now - 1 # -1 for "Back"
+                index = self.select_misc.now - 1  # -1 for "Back"
                 if self.select_misc.now < self.index_misc - self.MROWS:
                     # Cursor past the first item, scroll down
                     self.index_misc -= 1
@@ -856,9 +918,12 @@ class E3v3seDisplay:
                     else:
                         self.Draw_CustomMacroItem(index, self.MROWS)
                 else:
-                    self.Move_Highlight(-1, self.select_misc.now + self.MROWS - self.index_misc)# Move highlight
+                    # Move highlight
+                    self.Move_Highlight(
+                        -1, self.select_misc.now + self.MROWS - self.index_misc
+                    )
         elif encoder_state == self.ENCODER_DIFF_ENTER:
-            if self.select_misc.now == 0: # Back
+            if self.select_misc.now == 0:  # Back
                 self.select_misc.set(0)
                 self.Goto_MainMenu()
             else:
@@ -868,20 +933,30 @@ class E3v3seDisplay:
                 try:
                     self.gcode.run_script_from_command(macro["gcode"])
                 except Exception as e:
-                    self.error("Error running custom macro '%s': %s" % (macro["id"], e))
-                    self.gcode.respond_info("Error running custom macro '%s': %s" % (macro["id"], e))
+                    self.error(
+                        "Error running custom macro '%s': %s"
+                        % (macro["id"], e)
+                    )
+                    self.gcode.respond_info(
+                        "Error running custom macro '%s': %s"
+                        % (macro["id"], e)
+                    )
                     self.show_popup("Error: %s" % e)
 
     def HMI_Prepare(self):
         """
-        This function handles the logic for scrolling through the prepare menu options,
-        selecting different actions, and executing the corresponding actions based on user input.
+        This function handles the logic for scrolling through the prepare
+        menu options, selecting different actions, and executing the
+        corresponding actions based on user input.
         """
         encoder_state = self.get_encoder_state()
         if encoder_state == self.ENCODER_DIFF_NO:
             return
 
-        if encoder_state == self.ENCODER_DIFF_CW or encoder_state == self.ENCODER_DIFF_FAST_CW:
+        if (
+            encoder_state == self.ENCODER_DIFF_CW
+            or encoder_state == self.ENCODER_DIFF_FAST_CW
+        ):
             if self.select_prepare.inc(1 + self.PREPARE_CASE_TOTAL):
                 if (
                     self.select_prepare.now > self.MROWS
@@ -892,12 +967,15 @@ class E3v3seDisplay:
                     # Scroll up and draw a blank bottom line
                     self.Scroll_Menu(self.scroll_up)
                     self.Draw_Menu_Icon(
-                        self.MROWS, self.icon_axis + self.select_prepare.now - 1
+                        self.MROWS,
+                        self.icon_axis + self.select_prepare.now - 1,
                     )
 
                     # Draw "More" icon for sub-menus
                     if self.index_prepare < 7:
-                        self.Draw_More_Icon(self.MROWS - self.index_prepare + 1)
+                        self.Draw_More_Icon(
+                            self.MROWS - self.index_prepare + 1
+                        )
 
                     if self.pd.HAS_HOTEND:
                         if self.index_prepare == self.PREPARE_CASE_TPU:
@@ -907,9 +985,15 @@ class E3v3seDisplay:
                             self.Item_Prepare_Cool(self.MROWS)
                 else:
                     self.Move_Highlight(
-                        1, self.select_prepare.now + self.MROWS - self.index_prepare
+                        1,
+                        self.select_prepare.now
+                        + self.MROWS
+                        - self.index_prepare,
                     )
-        elif encoder_state == self.ENCODER_DIFF_CCW or encoder_state == self.ENCODER_DIFF_FAST_CCW:
+        elif (
+            encoder_state == self.ENCODER_DIFF_CCW
+            or encoder_state == self.ENCODER_DIFF_FAST_CCW
+        ):
             if self.select_prepare.dec():
                 if self.select_prepare.now < self.index_prepare - self.MROWS:
                     self.index_prepare -= 1
@@ -923,7 +1007,9 @@ class E3v3seDisplay:
                         )
 
                     if self.index_prepare < 7:
-                        self.Draw_More_Icon(self.MROWS - self.index_prepare + 1)
+                        self.Draw_More_Icon(
+                            self.MROWS - self.index_prepare + 1
+                        )
 
                     if self.index_prepare == 6:
                         self.Item_Prepare_Move(0)
@@ -933,7 +1019,10 @@ class E3v3seDisplay:
                         self.Item_Prepare_Home(0)
                 else:
                     self.Move_Highlight(
-                        -1, self.select_prepare.now + self.MROWS - self.index_prepare
+                        -1,
+                        self.select_prepare.now
+                        + self.MROWS
+                        - self.index_prepare,
                     )
 
         elif encoder_state == self.ENCODER_DIFF_ENTER:
@@ -941,15 +1030,21 @@ class E3v3seDisplay:
                 self.select_page.set(1)
                 self.Goto_MainMenu()
 
-            elif self.select_prepare.now == self.PREPARE_CASE_MOVE:  # Axis move
+            elif (
+                self.select_prepare.now == self.PREPARE_CASE_MOVE
+            ):  # Axis move
                 self.checkkey = self.AxisMove
                 self.select_axis.reset()
                 self.Draw_Move_Menu()
                 self.pd.sendGCode("G92 E0")
-                self.pd.current_position.e = self.pd.HMI_ValueStruct.Move_E_scale = 0
-            elif self.select_prepare.now == self.PREPARE_CASE_DISA:  # Disable steppers
+                self.pd.current_position.e = (
+                    self.pd.HMI_ValueStruct.Move_E_scale
+                ) = 0
+            elif self.select_prepare.now == self.PREPARE_CASE_DISA:
+                # Disable steppers
                 self.pd.sendGCode("M84")
-            elif self.select_prepare.now == self.PREPARE_CASE_HOME:  # Homing
+            elif self.select_prepare.now == self.PREPARE_CASE_HOME:
+                # Homing
                 self.checkkey = self.Last_Prepare
                 self.index_prepare = self.MROWS
                 self.pd.current_position.homing()
@@ -969,26 +1064,34 @@ class E3v3seDisplay:
                     2,
                     3,
                     175,
-                    self.MBASE(self.PREPARE_CASE_ZOFF + self.MROWS - self.index_prepare)
+                    self.MBASE(
+                        self.PREPARE_CASE_ZOFF
+                        + self.MROWS
+                        - self.index_prepare
+                    )
                     - 10,
                     self.pd.HMI_ValueStruct.offset_value,
                 )
 
                 self.EncoderRateLimit = False
 
-            elif self.select_prepare.now == self.PREPARE_CASE_PLA:  # PLA preheat
+            elif self.select_prepare.now == self.PREPARE_CASE_PLA:
+                # PLA preheat
                 self.pd.preheat("PLA")
 
-            elif self.select_prepare.now == self.PREPARE_CASE_TPU:  # TPU preheat
+            elif self.select_prepare.now == self.PREPARE_CASE_TPU:
+                # TPU preheat
                 self.pd.preheat("TPU")
 
-            elif self.select_prepare.now == self.PREPARE_CASE_COOL:  # Cool
+            elif self.select_prepare.now == self.PREPARE_CASE_COOL:
+                # Cool
                 if self.pd.HAS_FAN:
                     self.pd.zero_fan_speeds()
                 self.pd.disable_all_heaters()
 
-            elif self.select_prepare.now == self.PREPARE_CASE_LANG:  # Toggle Language
-                #self.HMI_ToggleLanguage()
+            elif self.select_prepare.now == self.PREPARE_CASE_LANG:
+                # Toggle Language
+                # self.HMI_ToggleLanguage()
                 self.Draw_Prepare_Menu()
 
     def HMI_Control(self):
@@ -996,7 +1099,10 @@ class E3v3seDisplay:
         if encoder_state == self.ENCODER_DIFF_NO:
             return
 
-        if encoder_state == self.ENCODER_DIFF_CW or encoder_state == self.ENCODER_DIFF_FAST_CW:
+        if (
+            encoder_state == self.ENCODER_DIFF_CW
+            or encoder_state == self.ENCODER_DIFF_FAST_CW
+        ):
             if self.select_control.inc(1 + self.CONTROL_CASE_TOTAL):
                 if (
                     self.select_control.now > self.MROWS
@@ -1005,17 +1111,24 @@ class E3v3seDisplay:
                     self.index_control = self.select_control.now
                     self.Scroll_Menu(self.scroll_up)
                     self.Draw_Menu_Icon(
-                        self.MROWS, self.icon_temperature + self.index_control - 1
+                        self.MROWS,
+                        self.icon_temperature + self.index_control - 1,
                     )
                     self.Draw_More_Icon(
-                        self.CONTROL_CASE_TEMP + self.MROWS - self.index_control
+                        self.CONTROL_CASE_TEMP
+                        + self.MROWS
+                        - self.index_control
                     )  # Temperature >
                     self.Draw_More_Icon(
-                        self.CONTROL_CASE_MOVE + self.MROWS - self.index_control
+                        self.CONTROL_CASE_MOVE
+                        + self.MROWS
+                        - self.index_control
                     )  # Motion >
                     if self.index_control > self.MROWS:
                         self.Draw_More_Icon(
-                            self.CONTROL_CASE_INFO + self.MROWS - self.index_control
+                            self.CONTROL_CASE_INFO
+                            + self.MROWS
+                            - self.index_control
                         )  # Info >
                         self.lcd.move_screen_area(
                             1,
@@ -1028,9 +1141,15 @@ class E3v3seDisplay:
                         )
                 else:
                     self.Move_Highlight(
-                        1, self.select_control.now + self.MROWS - self.index_control
+                        1,
+                        self.select_control.now
+                        + self.MROWS
+                        - self.index_control,
                     )
-        elif encoder_state == self.ENCODER_DIFF_CCW or encoder_state == self.ENCODER_DIFF_FAST_CCW:
+        elif (
+            encoder_state == self.ENCODER_DIFF_CCW
+            or encoder_state == self.ENCODER_DIFF_FAST_CCW
+        ):
             if self.select_control.dec():
                 if self.select_control.now < self.index_control - self.MROWS:
                     self.index_control -= 1
@@ -1039,7 +1158,10 @@ class E3v3seDisplay:
                         self.Draw_Back_First()
                     else:
                         self.Draw_Menu_Line(
-                            0, self.icon_temperature + self.select_control.now - 1
+                            0,
+                            self.icon_temperature
+                            + self.select_control.now
+                            - 1,
                         )
                     self.Draw_More_Icon(
                         0 + self.MROWS - self.index_control + 1
@@ -1049,13 +1171,18 @@ class E3v3seDisplay:
                     )  # Motion >
                 else:
                     self.Move_Highlight(
-                        -1, self.select_control.now + self.MROWS - self.index_control
+                        -1,
+                        self.select_control.now
+                        + self.MROWS
+                        - self.index_control,
                     )
         elif encoder_state == self.ENCODER_DIFF_ENTER:
             if self.select_control.now == 0:  # Back
                 self.select_page.set(2)
                 self.Goto_MainMenu()
-            if self.select_control.now == self.CONTROL_CASE_TEMP:  # Temperature
+            if (
+                self.select_control.now == self.CONTROL_CASE_TEMP
+            ):  # Temperature
                 self.checkkey = self.TemperatureID
                 self.pd.HMI_ValueStruct.show_mode = -1
                 self.select_temp.reset()
@@ -1109,7 +1236,10 @@ class E3v3seDisplay:
                 self.dwin_abort_flag = True  # Reset feedrate, return to Home
             return
 
-        if encoder_state == self.ENCODER_DIFF_CW or encoder_state == self.ENCODER_DIFF_FAST_CW:
+        if (
+            encoder_state == self.ENCODER_DIFF_CW
+            or encoder_state == self.ENCODER_DIFF_FAST_CW
+        ):
             if self.select_print.inc(3):
                 if self.select_print.now == 0:
                     self.show_tune()
@@ -1125,7 +1255,10 @@ class E3v3seDisplay:
                     else:
                         self.show_pause()
                     self.show_stop()
-        elif encoder_state == self.ENCODER_DIFF_CCW or encoder_state == self.ENCODER_DIFF_FAST_CCW:
+        elif (
+            encoder_state == self.ENCODER_DIFF_CCW
+            or encoder_state == self.ENCODER_DIFF_FAST_CCW
+        ):
             if self.select_print.dec():
                 if self.select_print.now == 0:
                     self.show_tune()
@@ -1165,11 +1298,17 @@ class E3v3seDisplay:
         encoder_state = self.get_encoder_state()
         if encoder_state == self.ENCODER_DIFF_NO:
             return
-        elif encoder_state == self.ENCODER_DIFF_CW or encoder_state == self.ENCODER_DIFF_FAST_CW:
+        elif (
+            encoder_state == self.ENCODER_DIFF_CW
+            or encoder_state == self.ENCODER_DIFF_FAST_CW
+        ):
             self.select_cancel.set(1)
             self.select_confirm.reset()
             self.Draw_Print_Confirmation_Buttons()
-        elif encoder_state == self.ENCODER_DIFF_CCW or encoder_state == self.ENCODER_DIFF_FAST_CCW:
+        elif (
+            encoder_state == self.ENCODER_DIFF_CCW
+            or encoder_state == self.ENCODER_DIFF_FAST_CCW
+        ):
             self.select_confirm.set(1)
             self.select_cancel.reset()
             self.Draw_Print_Confirmation_Buttons()
@@ -1185,42 +1324,63 @@ class E3v3seDisplay:
                 self.pd.selectedFile = None
                 self.checkkey = self.SelectFile
                 self.Draw_Print_File_Menu()
+
     def HMI_ManualProbe(self):
         encoder_state = self.get_encoder_state()
-        if encoder_state == self.ENCODER_DIFF_NO or self.manual_probe == None:
+        if encoder_state == self.ENCODER_DIFF_NO or self.manual_probe is None:
             return
 
         step = self.MANUAL_PROBE_STEPS[self.manual_probe_step_index]
         current_pos = self.manual_probe.status["z_position"]
-        min_z = self.stepper_z.getfloat("position_min", self.pd.Z_MIN_POS, note_valid=False)
-        max_z = self.stepper_z.getfloat("position_max", self.pd.Z_MAX_POS, note_valid=False)
+        min_z = self.stepper_z.getfloat(
+            "position_min", self.pd.Z_MIN_POS, note_valid=False
+        )
+        max_z = self.stepper_z.getfloat(
+            "position_max", self.pd.Z_MAX_POS, note_valid=False
+        )
         update = False
         error = False
 
-        if encoder_state == self.ENCODER_DIFF_CW or encoder_state == self.ENCODER_DIFF_FAST_CW:
+        if (
+            encoder_state == self.ENCODER_DIFF_CW
+            or encoder_state == self.ENCODER_DIFF_FAST_CW
+        ):
             if math.floor(current_pos - step) <= min_z:
-                self.error(f"Ignoring move '{current_pos - step}' as it is lower than Z limit '{min_z}'!")
+                self.error(
+                    "Ignoring move %f as it is lower than Z limit %s!" %
+                           (current_pos - step, min_z)
+                )
                 error = True
             else:
-                self.gcode.run_script_from_command(f"TESTZ Z=-{step}")
+                self.gcode.run_script_from_command("TESTZ Z=-%f" % step)
             update = True
-        elif encoder_state == self.ENCODER_DIFF_CCW or encoder_state == self.ENCODER_DIFF_FAST_CCW:
+        elif (
+            encoder_state == self.ENCODER_DIFF_CCW
+            or encoder_state == self.ENCODER_DIFF_FAST_CCW
+        ):
             step = self.MANUAL_PROBE_STEPS[self.manual_probe_step_index]
             if math.ceil(current_pos + step) >= max_z:
-                self.error(f"Ignoring move '{current_pos + step}' as it is greater than Z limit '{max_z}'!")
+                self.error(
+                    "Ignoring move %f as it is greater than Z limit %s!" %
+                           (current_pos + step, max_z)
+                )
                 error = True
             else:
-                self.gcode.run_script_from_command(f"TESTZ Z={step}")
+                self.gcode.run_script_from_command("TESTZ Z=%f" % step)
             update = True
         elif encoder_state == self.ENCODER_DIFF_ENTER:
-            self.manual_probe_step_index = (self.manual_probe_step_index + 1) % len(self.MANUAL_PROBE_STEPS)
+            self.manual_probe_step_index = (
+                self.manual_probe_step_index + 1
+            ) % len(self.MANUAL_PROBE_STEPS)
             update = True
         elif encoder_state == self.ENCODER_DIFF_LONG_ENTER:
             self.gcode.run_script_from_command("ACCEPT")
             self.Goto_MainMenu()
 
         if update:
-            self.Draw_Manual_Probe_Menu(draw_static_elements=False, draw_error=error)
+            self.Draw_Manual_Probe_Menu(
+                draw_static_elements=False, draw_error=error
+            )
 
     def HMI_MessagePopup(self):
         encoder_state = self.get_encoder_state()
@@ -1252,14 +1412,20 @@ class E3v3seDisplay:
         encoder_state = self.get_encoder_state()
         if encoder_state == self.ENCODER_DIFF_NO:
             return
-        
+
         updated = False
         if encoder_state == self.ENCODER_DIFF_ENTER:
             self.Goto_MainMenu()
-        elif encoder_state == self.ENCODER_DIFF_CW or encoder_state == self.ENCODER_DIFF_FAST_CW:
+        elif (
+            encoder_state == self.ENCODER_DIFF_CW
+            or encoder_state == self.ENCODER_DIFF_FAST_CW
+        ):
             self.select_icon_finder.inc(255)
             updated = True
-        elif encoder_state == self.ENCODER_DIFF_CCW or encoder_state == self.ENCODER_DIFF_FAST_CCW:
+        elif (
+            encoder_state == self.ENCODER_DIFF_CCW
+            or encoder_state == self.ENCODER_DIFF_FAST_CCW
+        ):
             self.select_icon_finder.dec()
             updated = True
 
@@ -1267,9 +1433,10 @@ class E3v3seDisplay:
             self.lcd.draw_rectangle(
                 1,
                 self.color_background_black,
-                0, self.HEADER_HEIGHT,
+                0,
+                self.HEADER_HEIGHT,
                 self.lcd.screen_width,
-                self.lcd.screen_height - self.MENU_CHR_W - 15
+                self.lcd.screen_height - self.MENU_CHR_W - 15,
             )
             self.Draw_IconFinder()
 
@@ -1278,11 +1445,17 @@ class E3v3seDisplay:
         encoder_state = self.get_encoder_state()
         if encoder_state == self.ENCODER_DIFF_NO:
             return
-        if encoder_state == self.ENCODER_DIFF_CW or encoder_state == self.ENCODER_DIFF_FAST_CW:
+        if (
+            encoder_state == self.ENCODER_DIFF_CW
+            or encoder_state == self.ENCODER_DIFF_FAST_CW
+        ):
             self.select_cancel.set(1)
             self.select_confirm.reset()
             self.Draw_Confirm_Cancel_Buttons()
-        elif encoder_state == self.ENCODER_DIFF_CCW or encoder_state == self.ENCODER_DIFF_FAST_CCW:
+        elif (
+            encoder_state == self.ENCODER_DIFF_CCW
+            or encoder_state == self.ENCODER_DIFF_FAST_CCW
+        ):
             self.select_confirm.set(1)
             self.select_cancel.reset()
             self.Draw_Confirm_Cancel_Buttons()
@@ -1295,7 +1468,8 @@ class E3v3seDisplay:
                 self.Goto_PrintProcess()
             elif self.select_print.now == 2:  # stop window
                 if self.pd.HMI_flag.select_flag:
-                    self.dwin_abort_flag = True  # Reset feedrate, return to Home
+                    self.dwin_abort_flag = True
+                    # Reset feedrate, return to Home
                     self.pd.cancel_job()
                     self.Goto_MainMenu()
                 else:
@@ -1306,7 +1480,10 @@ class E3v3seDisplay:
         encoder_state = self.get_encoder_state()
         if encoder_state == self.ENCODER_DIFF_NO:
             return
-        if encoder_state == self.ENCODER_DIFF_CW or encoder_state == self.ENCODER_DIFF_FAST_CW:
+        if (
+            encoder_state == self.ENCODER_DIFF_CW
+            or encoder_state == self.ENCODER_DIFF_FAST_CW
+        ):
             if self.select_tune.inc(1 + self.TUNE_CASE_TOTAL):
                 if (
                     self.select_tune.now > self.MROWS
@@ -1318,7 +1495,10 @@ class E3v3seDisplay:
                     self.Move_Highlight(
                         1, self.select_tune.now + self.MROWS - self.index_tune
                     )
-        elif encoder_state == self.ENCODER_DIFF_CCW or encoder_state == self.ENCODER_DIFF_FAST_CCW:
+        elif (
+            encoder_state == self.ENCODER_DIFF_CCW
+            or encoder_state == self.ENCODER_DIFF_FAST_CCW
+        ):
             if self.select_tune.dec():
                 if self.select_tune.now < self.index_tune - self.MROWS:
                     self.index_tune -= 1
@@ -1335,7 +1515,9 @@ class E3v3seDisplay:
                 self.Goto_PrintProcess()
             elif self.select_tune.now == self.TUNE_CASE_SPEED:  # Print speed
                 self.checkkey = self.PrintSpeed
-                self.pd.HMI_ValueStruct.print_speed = self.pd.feedrate_percentage
+                self.pd.HMI_ValueStruct.print_speed = (
+                    self.pd.feedrate_percentage
+                )
                 self.lcd.draw_int_value(
                     True,
                     True,
@@ -1345,7 +1527,10 @@ class E3v3seDisplay:
                     self.color_background_black,
                     3,
                     200,
-                    self.MBASE(self.TUNE_CASE_SPEED + self.MROWS - self.index_tune) - 8,
+                    self.MBASE(
+                        self.TUNE_CASE_SPEED + self.MROWS - self.index_tune
+                    )
+                    - 8,
                     self.pd.feedrate_percentage,
                 )
                 self.EncoderRateLimit = False
@@ -1391,7 +1576,8 @@ class E3v3seDisplay:
             self.color_background_black,
             3,
             200,
-            self.MBASE(self.select_tune.now + self.MROWS - self.index_tune) - 8,
+            self.MBASE(self.select_tune.now + self.MROWS - self.index_tune)
+            - 8,
             self.pd.HMI_ValueStruct.print_speed,
         )
 
@@ -1399,8 +1585,10 @@ class E3v3seDisplay:
         """
         Handles the axis movement in the HMI (Human Machine Interface).
 
-        This function checks the encoder state and performs the corresponding action based on the state.
-        It updates the display and handles the movement of the X, Y, Z axes, and the extruder.
+        This function checks the encoder state and performs the corresponding
+        action based on the state.
+        It updates the display and handles the movement of the X, Y, Z axes,
+        and the extruder.
         """
         encoder_state = self.get_encoder_state()
         if encoder_state == self.ENCODER_DIFF_NO:
@@ -1409,7 +1597,8 @@ class E3v3seDisplay:
         # In case of "nozzle too cold" popup is on the screen
         if self.pd.PREVENT_COLD_EXTRUSION:
             if self.pd.HMI_flag.ETempTooLow_flag:
-                # Resuming after "nozzle too cold" popup should clear the flag and draw move menu again
+                # Resuming after "nozzle too cold" popup should clear the flag
+                # and draw move menu again
                 if encoder_state == self.ENCODER_DIFF_ENTER:
                     self.pd.HMI_flag.ETempTooLow_flag = False
                     self.pd.current_position.e = (
@@ -1419,10 +1608,16 @@ class E3v3seDisplay:
                 return
 
         # Avoid flicker by updating only the previous menu
-        if encoder_state == self.ENCODER_DIFF_CW or encoder_state == self.ENCODER_DIFF_FAST_CW:
+        if (
+            encoder_state == self.ENCODER_DIFF_CW
+            or encoder_state == self.ENCODER_DIFF_FAST_CW
+        ):
             if self.select_axis.inc(1 + 4):
                 self.Move_Highlight(1, self.select_axis.now)
-        elif encoder_state == self.ENCODER_DIFF_CCW or encoder_state == self.ENCODER_DIFF_FAST_CCW:
+        elif (
+            encoder_state == self.ENCODER_DIFF_CCW
+            or encoder_state == self.ENCODER_DIFF_FAST_CCW
+        ):
             if self.select_axis.dec():
                 self.Move_Highlight(-1, self.select_axis.now)
         elif encoder_state == self.ENCODER_DIFF_ENTER:
@@ -1490,7 +1685,8 @@ class E3v3seDisplay:
                 )
                 self.EncoderRateLimit = False
             elif selected_line == 4:  # Extruder
-                # Check if nozzle is too cold and don't allow extrusion. Popup warning instead
+                # Check if nozzle is too cold and don't allow extrusion. Popup
+                # warning instead
                 if self.pd.PREVENT_COLD_EXTRUSION:
                     if (
                         self.pd.thermalManager["temp_hotend"][0]["celsius"]
@@ -1758,13 +1954,15 @@ class E3v3seDisplay:
             self.pd.EXTRUDE_MAXLENGTH
         ) * self.MINUNITMULT:
             self.pd.HMI_ValueStruct.Move_E_scale = (
-                self.pd.last_E_scale + (self.pd.EXTRUDE_MAXLENGTH) * self.MINUNITMULT
+                self.pd.last_E_scale
+                + (self.pd.EXTRUDE_MAXLENGTH) * self.MINUNITMULT
             )
         elif (self.pd.last_E_scale - self.pd.HMI_ValueStruct.Move_E_scale) > (
             self.pd.EXTRUDE_MAXLENGTH
         ) * self.MINUNITMULT:
             self.pd.HMI_ValueStruct.Move_E_scale = (
-                self.pd.last_E_scale - (self.pd.EXTRUDE_MAXLENGTH) * self.MINUNITMULT
+                self.pd.last_E_scale
+                - (self.pd.EXTRUDE_MAXLENGTH) * self.MINUNITMULT
             )
         self.pd.current_position.e = self.pd.HMI_ValueStruct.Move_E_scale / 10
         self.lcd.draw_signed_float(
@@ -1784,10 +1982,16 @@ class E3v3seDisplay:
         if encoder_state == self.ENCODER_DIFF_NO:
             return
 
-        if encoder_state == self.ENCODER_DIFF_CW or encoder_state == self.ENCODER_DIFF_FAST_CW:
+        if (
+            encoder_state == self.ENCODER_DIFF_CW
+            or encoder_state == self.ENCODER_DIFF_FAST_CW
+        ):
             if self.select_temp.inc(1 + self.TEMP_CASE_TOTAL):
                 self.Move_Highlight(1, self.select_temp.now)
-        elif encoder_state == self.ENCODER_DIFF_CCW or encoder_state == self.ENCODER_DIFF_FAST_CCW:
+        elif (
+            encoder_state == self.ENCODER_DIFF_CCW
+            or encoder_state == self.ENCODER_DIFF_FAST_CCW
+        ):
             if self.select_temp.dec():
                 self.Move_Highlight(-1, self.select_temp.now)
         elif encoder_state == self.ENCODER_DIFF_ENTER:
@@ -1796,11 +2000,12 @@ class E3v3seDisplay:
                 self.select_control.set(1)
                 self.index_control = self.MROWS
                 self.Draw_Control_Menu()
-            elif self.select_temp.now == self.TEMP_CASE_TEMP:  # Nozzle temperature
+            elif self.select_temp.now == self.TEMP_CASE_TEMP:
+                # Nozzle temperature
                 self.checkkey = self.ETemp
-                self.pd.HMI_ValueStruct.E_Temp = self.pd.thermalManager["temp_hotend"][
-                    0
-                ]["target"]
+                self.pd.HMI_ValueStruct.E_Temp = self.pd.thermalManager[
+                    "temp_hotend"
+                ][0]["target"]
                 self.lcd.draw_int_value(
                     True,
                     True,
@@ -1816,9 +2021,9 @@ class E3v3seDisplay:
                 self.EncoderRateLimit = False
             elif self.select_temp.now == self.TEMP_CASE_BED:  # Bed temperature
                 self.checkkey = self.BedTemp
-                self.pd.HMI_ValueStruct.Bed_Temp = self.pd.thermalManager["temp_bed"][
-                    "target"
-                ]
+                self.pd.HMI_ValueStruct.Bed_Temp = self.pd.thermalManager[
+                    "temp_bed"
+                ]["target"]
                 self.lcd.draw_int_value(
                     True,
                     True,
@@ -1834,9 +2039,9 @@ class E3v3seDisplay:
                 self.EncoderRateLimit = False
             elif self.select_temp.now == self.TEMP_CASE_FAN:  # Fan speed
                 self.checkkey = self.FanSpeed
-                self.pd.HMI_ValueStruct.Fan_speed = self.pd.thermalManager["fan_speed"][
-                    0
-                ]
+                self.pd.HMI_ValueStruct.Fan_speed = self.pd.thermalManager[
+                    "fan_speed"
+                ][0]
                 self.lcd.draw_int_value(
                     True,
                     True,
@@ -1851,7 +2056,9 @@ class E3v3seDisplay:
                 )
                 self.EncoderRateLimit = False
 
-            elif self.select_temp.now == self.TEMP_CASE_PLA:  # PLA preheat setting
+            elif (
+                self.select_temp.now == self.TEMP_CASE_PLA
+            ):  # PLA preheat setting
                 self.checkkey = self.PLAPreheat
                 self.select_PLA.reset()
                 self.pd.HMI_ValueStruct.show_mode = -2
@@ -1868,7 +2075,9 @@ class E3v3seDisplay:
                 self.Draw_Back_First()
                 i = 1
                 self.Draw_Menu_Line_With_Only_Icons(
-                    i, self.icon_SetEndTemp, self.icon_TEXT_pla_nozzle_temperature
+                    i,
+                    self.icon_SetEndTemp,
+                    self.icon_TEXT_pla_nozzle_temperature,
                 )  # PLA nozzle temp
                 self.lcd.draw_int_value(
                     True,
@@ -1885,7 +2094,9 @@ class E3v3seDisplay:
                 if self.pd.HAS_HEATED_BED:
                     i += 1
                     self.Draw_Menu_Line_With_Only_Icons(
-                        i, self.icon_SetBedTemp, self.icon_TEXT_pla_bed_temperature
+                        i,
+                        self.icon_SetBedTemp,
+                        self.icon_TEXT_pla_bed_temperature,
                     )  # PLA bed temp
                     self.lcd.draw_int_value(
                         True,
@@ -1918,9 +2129,13 @@ class E3v3seDisplay:
                     )
                 i += 1
                 self.Draw_Menu_Line_With_Only_Icons(
-                    i, self.icon_write_eeprom, self.icon_TEXT_save_pla_parameters
+                    i,
+                    self.icon_write_eeprom,
+                    self.icon_TEXT_save_pla_parameters,
                 )  # Save PLA configuration
-            elif self.select_temp.now == self.TEMP_CASE_TPU:  # TPU preheat setting
+            elif (
+                self.select_temp.now == self.TEMP_CASE_TPU
+            ):  # TPU preheat setting
                 self.checkkey = self.TPUPreheat
                 self.select_TPU.reset()
                 self.pd.HMI_ValueStruct.show_mode = -3
@@ -1936,7 +2151,9 @@ class E3v3seDisplay:
                 self.Draw_Back_First()
                 i = 1
                 self.Draw_Menu_Line_With_Only_Icons(
-                    i, self.icon_SetEndTemp, self.icon_TEXT_tpu_nozzle_temperature
+                    i,
+                    self.icon_SetEndTemp,
+                    self.icon_TEXT_tpu_nozzle_temperature,
                 )  # TPU nozzle temp
                 self.lcd.draw_int_value(
                     True,
@@ -1953,7 +2170,9 @@ class E3v3seDisplay:
                 if self.pd.HAS_HEATED_BED:
                     i += 1
                     self.Draw_Menu_Line_With_Only_Icons(
-                        i, self.icon_SetBedTemp, self.icon_TEXT_tpu_bed_temperature
+                        i,
+                        self.icon_SetBedTemp,
+                        self.icon_TEXT_tpu_bed_temperature,
                     )  # TPU bed temp
                     self.lcd.draw_int_value(
                         True,
@@ -1986,7 +2205,9 @@ class E3v3seDisplay:
                     )
                 i += 1
                 self.Draw_Menu_Line_With_Only_Icons(
-                    i, self.icon_write_eeprom, self.icon_TEXT_save_tpu_parameters
+                    i,
+                    self.icon_write_eeprom,
+                    self.icon_TEXT_save_tpu_parameters,
                 )  # Save TPU configuration
 
     def HMI_PLAPreheatSetting(self):
@@ -1994,10 +2215,16 @@ class E3v3seDisplay:
         if encoder_state == self.ENCODER_DIFF_NO:
             return
         # Avoid flicker by updating only the previous menu
-        elif encoder_state == self.ENCODER_DIFF_CW or encoder_state == self.ENCODER_DIFF_FAST_CW:
+        elif (
+            encoder_state == self.ENCODER_DIFF_CW
+            or encoder_state == self.ENCODER_DIFF_FAST_CW
+        ):
             if self.select_PLA.inc(1 + self.PREHEAT_CASE_TOTAL):
                 self.Move_Highlight(1, self.select_PLA.now)
-        elif encoder_state == self.ENCODER_DIFF_CCW or encoder_state == self.ENCODER_DIFF_FAST_CCW:
+        elif (
+            encoder_state == self.ENCODER_DIFF_CCW
+            or encoder_state == self.ENCODER_DIFF_FAST_CCW
+        ):
             if self.select_PLA.dec():
                 self.Move_Highlight(-1, self.select_PLA.now)
         elif encoder_state == self.ENCODER_DIFF_ENTER:
@@ -2006,9 +2233,13 @@ class E3v3seDisplay:
                 self.select_temp.now = self.TEMP_CASE_PLA
                 self.pd.HMI_ValueStruct.show_mode = -1
                 self.Draw_Temperature_Menu()
-            elif self.select_PLA.now == self.PREHEAT_CASE_TEMP:  # Nozzle temperature
+            elif (
+                self.select_PLA.now == self.PREHEAT_CASE_TEMP
+            ):  # Nozzle temperature
                 self.checkkey = self.ETemp
-                self.pd.HMI_ValueStruct.E_Temp = self.pd.material_preset[0].hotend_temp
+                self.pd.HMI_ValueStruct.E_Temp = self.pd.material_preset[
+                    0
+                ].hotend_temp
                 self.lcd.draw_int_value(
                     True,
                     True,
@@ -2022,9 +2253,13 @@ class E3v3seDisplay:
                     self.pd.material_preset[0].hotend_temp,
                 )
                 self.EncoderRateLimit = False
-            elif self.select_PLA.now == self.PREHEAT_CASE_BED:  # Bed temperature
+            elif (
+                self.select_PLA.now == self.PREHEAT_CASE_BED
+            ):  # Bed temperature
                 self.checkkey = self.BedTemp
-                self.pd.HMI_ValueStruct.Bed_Temp = self.pd.material_preset[0].bed_temp
+                self.pd.HMI_ValueStruct.Bed_Temp = self.pd.material_preset[
+                    0
+                ].bed_temp
                 self.lcd.draw_int_value(
                     True,
                     True,
@@ -2040,7 +2275,9 @@ class E3v3seDisplay:
                 self.EncoderRateLimit = False
             elif self.select_PLA.now == self.PREHEAT_CASE_FAN:  # Fan speed
                 self.checkkey = self.FanSpeed
-                self.pd.HMI_ValueStruct.Fan_speed = self.pd.material_preset[0].fan_speed
+                self.pd.HMI_ValueStruct.Fan_speed = self.pd.material_preset[
+                    0
+                ].fan_speed
                 self.lcd.draw_int_value(
                     True,
                     True,
@@ -2058,17 +2295,23 @@ class E3v3seDisplay:
                 self.select_PLA.now == self.PREHEAT_CASE_SAVE
             ):  # Save PLA configuration
                 success = self.pd.save_settings()
-                #self.HMI_AudioFeedback(success)
+                # self.HMI_AudioFeedback(success)
 
     def HMI_TPUPreheatSetting(self):
         encoder_state = self.get_encoder_state()
         if encoder_state == self.ENCODER_DIFF_NO:
             return
         # Avoid flicker by updating only the previous menu
-        elif encoder_state == self.ENCODER_DIFF_CW or encoder_state == self.ENCODER_DIFF_FAST_CW:
+        elif (
+            encoder_state == self.ENCODER_DIFF_CW
+            or encoder_state == self.ENCODER_DIFF_FAST_CW
+        ):
             if self.select_TPU.inc(1 + self.PREHEAT_CASE_TOTAL):
                 self.Move_Highlight(1, self.select_TPU.now)
-        elif encoder_state == self.ENCODER_DIFF_CCW or encoder_state == self.ENCODER_DIFF_FAST_CCW:
+        elif (
+            encoder_state == self.ENCODER_DIFF_CCW
+            or encoder_state == self.ENCODER_DIFF_FAST_CCW
+        ):
             if self.select_TPU.dec():
                 self.Move_Highlight(-1, self.select_TPU.now)
         elif encoder_state == self.ENCODER_DIFF_ENTER:
@@ -2078,9 +2321,13 @@ class E3v3seDisplay:
                 self.pd.HMI_ValueStruct.show_mode = -1
                 self.Draw_Temperature_Menu()
 
-            elif self.select_TPU.now == self.PREHEAT_CASE_TEMP:  # Nozzle temperature
+            elif (
+                self.select_TPU.now == self.PREHEAT_CASE_TEMP
+            ):  # Nozzle temperature
                 self.checkkey = self.ETemp
-                self.pd.HMI_ValueStruct.E_Temp = self.pd.material_preset[1].hotend_temp
+                self.pd.HMI_ValueStruct.E_Temp = self.pd.material_preset[
+                    1
+                ].hotend_temp
                 print(self.pd.HMI_ValueStruct.E_Temp)
                 self.lcd.draw_int_value(
                     True,
@@ -2095,9 +2342,13 @@ class E3v3seDisplay:
                     self.pd.material_preset[1].hotend_temp,
                 )
                 self.EncoderRateLimit = False
-            elif self.select_TPU.now == self.PREHEAT_CASE_BED:  # Bed temperature
+            elif (
+                self.select_TPU.now == self.PREHEAT_CASE_BED
+            ):  # Bed temperature
                 self.checkkey = self.BedTemp
-                self.pd.HMI_ValueStruct.Bed_Temp = self.pd.material_preset[1].bed_temp
+                self.pd.HMI_ValueStruct.Bed_Temp = self.pd.material_preset[
+                    1
+                ].bed_temp
                 self.lcd.draw_int_value(
                     True,
                     True,
@@ -2113,7 +2364,9 @@ class E3v3seDisplay:
                 self.EncoderRateLimit = False
             elif self.select_TPU.now == self.PREHEAT_CASE_FAN:  # Fan speed
                 self.checkkey = self.FanSpeed
-                self.pd.HMI_ValueStruct.Fan_speed = self.pd.material_preset[1].fan_speed
+                self.pd.HMI_ValueStruct.Fan_speed = self.pd.material_preset[
+                    1
+                ].fan_speed
                 self.lcd.draw_int_value(
                     True,
                     True,
@@ -2131,7 +2384,7 @@ class E3v3seDisplay:
                 self.select_TPU.now == self.PREHEAT_CASE_SAVE
             ):  # Save PLA configuration
                 success = self.pd.save_settings()
-                #self.HMI_AudioFeedback(success)
+                # self.HMI_AudioFeedback(success)
 
     def HMI_ETemp(self):
         encoder_state = self.get_encoder_state()
@@ -2166,7 +2419,9 @@ class E3v3seDisplay:
                 self.pd.setExtTemp(self.pd.HMI_ValueStruct.E_Temp)
             elif self.pd.HMI_ValueStruct.show_mode == -2:
                 self.checkkey = self.PLAPreheat
-                self.pd.material_preset[0].hotend_temp = self.pd.HMI_ValueStruct.E_Temp
+                self.pd.material_preset[0].hotend_temp = (
+                    self.pd.HMI_ValueStruct.E_Temp
+                )
                 self.lcd.draw_int_value(
                     True,
                     True,
@@ -2182,7 +2437,9 @@ class E3v3seDisplay:
                 return
             elif self.pd.HMI_ValueStruct.show_mode == -3:
                 self.checkkey = self.TPUPreheat
-                self.pd.material_preset[1].hotend_temp = self.pd.HMI_ValueStruct.E_Temp
+                self.pd.material_preset[1].hotend_temp = (
+                    self.pd.HMI_ValueStruct.E_Temp
+                )
                 self.lcd.draw_int_value(
                     True,
                     True,
@@ -2273,7 +2530,9 @@ class E3v3seDisplay:
                 self.pd.setBedTemp(self.pd.HMI_ValueStruct.Bed_Temp)
             elif self.pd.HMI_ValueStruct.show_mode == -2:
                 self.checkkey = self.PLAPreheat
-                self.pd.material_preset[0].bed_temp = self.pd.HMI_ValueStruct.Bed_Temp
+                self.pd.material_preset[0].bed_temp = (
+                    self.pd.HMI_ValueStruct.Bed_Temp
+                )
                 self.lcd.draw_int_value(
                     True,
                     True,
@@ -2289,7 +2548,9 @@ class E3v3seDisplay:
                 return
             elif self.pd.HMI_ValueStruct.show_mode == -3:
                 self.checkkey = self.TPUPreheat
-                self.pd.material_preset[1].bed_temp = self.pd.HMI_ValueStruct.Bed_Temp
+                self.pd.material_preset[1].bed_temp = (
+                    self.pd.HMI_ValueStruct.Bed_Temp
+                )
                 self.lcd.draw_int_value(
                     True,
                     True,
@@ -2353,10 +2614,16 @@ class E3v3seDisplay:
         encoder_state = self.get_encoder_state()
         if encoder_state == self.ENCODER_DIFF_NO:
             return
-        if encoder_state == self.ENCODER_DIFF_CW or encoder_state == self.ENCODER_DIFF_FAST_CW:
+        if (
+            encoder_state == self.ENCODER_DIFF_CW
+            or encoder_state == self.ENCODER_DIFF_FAST_CW
+        ):
             if self.select_motion.inc(1 + self.MOTION_CASE_TOTAL):
                 self.Move_Highlight(1, self.select_motion.now)
-        elif encoder_state == self.ENCODER_DIFF_CCW or encoder_state == self.ENCODER_DIFF_FAST_CCW:
+        elif (
+            encoder_state == self.ENCODER_DIFF_CCW
+            or encoder_state == self.ENCODER_DIFF_FAST_CCW
+        ):
             if self.select_motion.dec():
                 self.Move_Highlight(-1, self.select_motion.now)
         elif encoder_state == self.ENCODER_DIFF_ENTER:
@@ -2380,7 +2647,9 @@ class E3v3seDisplay:
             return
         zoff_line = 0
         if self.pd.HMI_ValueStruct.show_mode == -4:
-            zoff_line = self.PREPARE_CASE_ZOFF + self.MROWS - self.index_prepare
+            zoff_line = (
+                self.PREPARE_CASE_ZOFF + self.MROWS - self.index_prepare
+            )
         else:
             zoff_line = self.TUNE_CASE_ZOFF + self.MROWS - self.index_tune
 
@@ -2392,7 +2661,9 @@ class E3v3seDisplay:
                 self.pd.setZOffset(self.dwin_zoffset)  # manually set
 
             self.checkkey = (
-                self.Prepare if self.pd.HMI_ValueStruct.show_mode == -4 else self.Tune
+                self.Prepare
+                if self.pd.HMI_ValueStruct.show_mode == -4
+                else self.Tune
             )
             self.lcd.draw_signed_float(
                 True,
@@ -2488,7 +2759,6 @@ class E3v3seDisplay:
         if encoder_state == self.ENCODER_DIFF_NO:
             return
 
-
     # --------------------------------------------------------------#
 
     def Draw_Status_Area(self, with_update=True):
@@ -2504,7 +2774,9 @@ class E3v3seDisplay:
 
         # nozzle temp area
         if self.pd.nozzleIsHeating():
-            self.lcd.draw_icon(True, self.GIF_ICON, self.icon_nozzle_heating_0, 6, 262)
+            self.lcd.draw_icon(
+                True, self.GIF_ICON, self.icon_nozzle_heating_0, 6, 262
+            )
         else:
             self.lcd.draw_icon(True, self.ICON, self.icon_hotend_temp, 6, 262)
 
@@ -2513,7 +2785,11 @@ class E3v3seDisplay:
             True,
             0,
             self.lcd.font_8x8,
-            self.color_yellow if self.pd.nozzleIsHeating() else self.color_white,
+            (
+                self.color_yellow
+                if self.pd.nozzleIsHeating()
+                else self.color_white
+            ),
             self.color_background_black,
             3,
             26,
@@ -2544,7 +2820,9 @@ class E3v3seDisplay:
 
         # bed temp area
         if self.pd.bedIsHeating():
-            self.lcd.draw_icon(True, self.GIF_ICON, self.icon_bed_heating_0, 6, 294)
+            self.lcd.draw_icon(
+                True, self.GIF_ICON, self.icon_bed_heating_0, 6, 294
+            )
         else:
             self.lcd.draw_icon(True, self.ICON, self.icon_bedtemp, 6, 294)
 
@@ -2693,7 +2971,9 @@ class E3v3seDisplay:
         )
 
     def Draw_More_Icon(self, line):
-        self.lcd.draw_icon(True, self.ICON, self.icon_more, 206, self.MBASE(line) - 14)
+        self.lcd.draw_icon(
+            True, self.ICON, self.icon_more, 206, self.MBASE(line) - 14
+        )
 
     def Draw_Menu_Cursor(self, line):
         self.lcd.draw_rectangle(
@@ -2710,7 +2990,11 @@ class E3v3seDisplay:
 
     def Draw_Menu_Text_Icon(self, line, text_icon):
         self.lcd.draw_icon(
-            True, self.selected_language, text_icon, self.LBLX, self.MBASE(line) - 16
+            True,
+            self.selected_language,
+            text_icon,
+            self.LBLX,
+            self.MBASE(line) - 16,
         )
 
     def Draw_Menu_Line(self, line, icon=False, label=False):
@@ -2768,16 +3052,22 @@ class E3v3seDisplay:
 
     # Draw "Back" line at the top
     def Draw_Back_First(self, is_sel=True):
-        self.Draw_Menu_Line_With_Only_Icons(0, self.icon_back, self.icon_TEXT_back)
+        self.Draw_Menu_Line_With_Only_Icons(
+            0, self.icon_back, self.icon_TEXT_back
+        )
 
         if is_sel:
             self.Draw_Menu_Cursor(0)
 
     def draw_move_en(self, line):
-        self.lcd.move_screen_area(1, 69, 61, 102, 71, self.LBLX, line)  # "Move"
+        self.lcd.move_screen_area(
+            1, 69, 61, 102, 71, self.LBLX, line
+        )  # "Move"
 
     def draw_max_en(self, line):
-        self.lcd.move_screen_area(1, 245, 119, 269, 129, self.LBLX, line)  # "Max"
+        self.lcd.move_screen_area(
+            1, 245, 119, 269, 129, self.LBLX, line
+        )  # "Max"
 
     def draw_max_accel_en(self, line):
         self.draw_max_en(line)
@@ -2791,7 +3081,9 @@ class E3v3seDisplay:
         )  # "Speed"
 
     def draw_jerk_en(self, line):
-        self.lcd.move_screen_area(1, 64, 119, 106, 129, self.LBLX + 27, line)  # "Jerk"
+        self.lcd.move_screen_area(
+            1, 64, 119, 106, 129, self.LBLX + 27, line
+        )  # "Jerk"
 
     def draw_steps_per_mm(self, line):
         self.lcd.move_screen_area(
@@ -2801,7 +3093,7 @@ class E3v3seDisplay:
     # Display an SD item
     def Draw_SDItem(self, item, row=0):
         fl = self.pd.GetFiles()[item]
-        if len(self.pd.fl[item].split('/')) > self.pd.subdirIndex + 1:
+        if len(self.pd.fl[item].split("/")) > self.pd.subdirIndex + 1:
             self.Draw_Menu_Line(row, self.icon_more, fl)
         else:
             self.Draw_Menu_Line(row, self.icon_file, fl)
@@ -2851,30 +3143,28 @@ class E3v3seDisplay:
         self.lcd.draw_rectangle(1, c1, 12, 225, 97, 260)
         self.lcd.draw_rectangle(1, c2, 136, 225, 221, 260)
         self.lcd.draw_icon(
-            True,
-            self.selected_language,
-            self.icon_confirm_button,
-            14,
-            227
+            True, self.selected_language, self.icon_confirm_button, 14, 227
         )
         self.lcd.draw_icon(
-            True,
-            self.selected_language,
-            self.icon_cancel_button,
-            138,
-            227
-        )          
+            True, self.selected_language, self.icon_cancel_button, 138, 227
+        )
 
     def Draw_Printing_Screen(self):
         # Tune
         self.lcd.draw_icon(True, self.ICON, self.icon_tune, 12, 191)
-        self.lcd.draw_icon(False, self.selected_language, self.icon_TEXT_Tune, 12, 225)
+        self.lcd.draw_icon(
+            False, self.selected_language, self.icon_TEXT_Tune, 12, 225
+        )
         # Pause
         self.lcd.draw_icon(True, self.ICON, self.icon_pause, 86, 191)
-        self.lcd.draw_icon(False, self.selected_language, self.icon_TEXT_Pause, 86, 225)
+        self.lcd.draw_icon(
+            False, self.selected_language, self.icon_TEXT_Pause, 86, 225
+        )
         # Stop
         self.lcd.draw_icon(True, self.ICON, self.icon_stop, 160, 191)
-        self.lcd.draw_icon(False, self.selected_language, self.icon_TEXT_Stop, 160, 225)
+        self.lcd.draw_icon(
+            False, self.selected_language, self.icon_TEXT_Stop, 160, 225
+        )
         # Print elapsed time
         self.lcd.draw_icon(True, self.ICON, self.icon_print_time, 117, 77)
         self.lcd.draw_icon(
@@ -2969,8 +3259,6 @@ class E3v3seDisplay:
     def Draw_Print_Preview(self):
         self.Clear_Main_Window()
 
-        
-
         self.lcd.draw_string_centered(
             False,
             self.lcd.font_8x8,
@@ -2980,34 +3268,33 @@ class E3v3seDisplay:
             self.MENU_CHR_W,
             self.lcd.screen_width / 2,
             self.HEADER_HEIGHT / 2,
-            self.pd.selectedFile.split('/')[-1][:28]
+            self.pd.selectedFile.split("/")[-1][:28],
         )
 
-        self.lcd.draw_icon(   # Draw preview image
+        self.lcd.draw_icon(  # Draw preview image
             False,
             self.ICON,
             self.icon_preview_placeholder,
             self.lcd.screen_width / 2 - 48,
-            30
+            30,
         )
 
         self.lcd.draw_icon(
             False,
             self.selected_language,
             self.icon_TEXT_estimated_time,
-            12, 134
+            12,
+            134,
         )
         self.lcd.draw_icon(
             False,
             self.selected_language,
             self.icon_TEXT_filament_used,
-            12, 159
+            12,
+            159,
         )
         self.lcd.draw_icon(
-            False,
-            self.selected_language,
-            self.icon_TEXT_layer_height,
-            12, 184
+            False, self.selected_language, self.icon_TEXT_layer_height, 12, 184
         )
 
         self.pd.scanMetadata()
@@ -3018,9 +3305,17 @@ class E3v3seDisplay:
             self.lcd.font_6x12,
             self.color_white,
             self.color_background_black,
-            self.lcd.screen_width - 80 if self.pd.metadata['estimated_time'] else 205,
+            (
+                self.lcd.screen_width - 80
+                if self.pd.metadata["estimated_time"]
+                else 205
+            ),
             134 + 5,
-            self.pd.metadata['estimated_time'] if self.pd.metadata['estimated_time'] else "N/A"
+            (
+                self.pd.metadata["estimated_time"]
+                if self.pd.metadata["estimated_time"]
+                else "N/A"
+            ),
         )
 
         self.lcd.draw_string(
@@ -3028,9 +3323,17 @@ class E3v3seDisplay:
             self.lcd.font_6x12,
             self.color_white,
             self.color_background_black,
-            self.lcd.screen_width - 80 if self.pd.metadata['filament_used'] else 205,
+            (
+                self.lcd.screen_width - 80
+                if self.pd.metadata["filament_used"]
+                else 205
+            ),
             159 + 5,
-            self.pd.metadata['filament_used'] if self.pd.metadata['filament_used'] else "N/A"
+            (
+                self.pd.metadata["filament_used"]
+                if self.pd.metadata["filament_used"]
+                else "N/A"
+            ),
         )
 
         self.lcd.draw_string(
@@ -3038,9 +3341,17 @@ class E3v3seDisplay:
             self.lcd.font_6x12,
             self.color_white,
             self.color_background_black,
-            self.lcd.screen_width - 80 if self.pd.metadata['layer_height'] else 205,
+            (
+                self.lcd.screen_width - 80
+                if self.pd.metadata["layer_height"]
+                else 205
+            ),
             184 + 5,
-            self.pd.metadata['layer_height'] if self.pd.metadata['layer_height'] else 'N/A'
+            (
+                self.pd.metadata["layer_height"]
+                if self.pd.metadata["layer_height"]
+                else "N/A"
+            ),
         )
 
         self.select_confirm.set(1)
@@ -3080,7 +3391,9 @@ class E3v3seDisplay:
         if scroll + self.PREPARE_CASE_MOVE <= self.MROWS:
             self.Item_Prepare_Move(self.PREPARE_CASE_MOVE)  # Move >
         if scroll + self.PREPARE_CASE_DISA <= self.MROWS:
-            self.Item_Prepare_Disable(self.PREPARE_CASE_DISA)  # Disable Stepper
+            self.Item_Prepare_Disable(
+                self.PREPARE_CASE_DISA
+            )  # Disable Stepper
         if scroll + self.PREPARE_CASE_HOME <= self.MROWS:
             self.Item_Prepare_Home(self.PREPARE_CASE_HOME)  # Auto Home
         if self.pd.HAS_ZOFFSET_ITEM:
@@ -3114,9 +3427,12 @@ class E3v3seDisplay:
         self.Draw_Back_First(self.select_control.now == 0)
 
         # self.Frame_TitleCopy(1, 128, 2, 176, 12)
-        # self.lcd.move_screen_area(1, 1, 89, 83, 101, self.LBLX, self.MBASE(self.CONTROL_CASE_TEMP))  # Temperature >
-        # self.lcd.move_screen_area(1, 84, 89, 128, 99, self.LBLX, self.MBASE(self.CONTROL_CASE_MOVE))  # Motion >
-        # self.lcd.move_screen_area(1, 0, 104, 25, 115, self.LBLX, self.MBASE(self.CONTROL_CASE_INFO))  # Info >
+        # self.lcd.move_screen_area(1, 1, 89, 83, 101,
+        # self.LBLX, self.MBASE(self.CONTROL_CASE_TEMP))  # Temperature >
+        # self.lcd.move_screen_area(1, 84, 89, 128, 99,
+        # self.LBLX, self.MBASE(self.CONTROL_CASE_MOVE))  # Motion >
+        # self.lcd.move_screen_area(1, 0, 104, 25, 115, self.LBLX,
+        # self.MBASE(self.CONTROL_CASE_INFO))  # Info >
 
         if self.select_control.now and self.select_control.now < self.MROWS:
             self.Draw_Menu_Cursor(self.select_control.now)
@@ -3126,9 +3442,13 @@ class E3v3seDisplay:
             1, self.icon_temperature, self.icon_TEXT_temperature
         )
         self.Draw_More_Icon(1)
-        self.Draw_Menu_Line_With_Only_Icons(2, self.icon_motion, self.icon_TEXT_motion)
+        self.Draw_Menu_Line_With_Only_Icons(
+            2, self.icon_motion, self.icon_TEXT_motion
+        )
         self.Draw_More_Icon(2)
-        self.Draw_Menu_Line_With_Only_Icons(3, self.icon_info, self.icon_TEXT_Info)
+        self.Draw_Menu_Line_With_Only_Icons(
+            3, self.icon_info, self.icon_TEXT_Info
+        )
         self.Draw_More_Icon(3)
         self.Draw_Status_Area()
 
@@ -3143,12 +3463,13 @@ class E3v3seDisplay:
             self.MENU_CHR_W,
             self.lcd.screen_width / 2,
             self.HEADER_HEIGHT / 2,
-            "Miscellaneous"
+            "Miscellaneous",
         )
 
         self.select_misc.reset()
         self.index_misc = self.MROWS
-        self.Clear_Menu_Area() # Leave title bar unchanged, clear only middle of screen
+        self.Clear_Menu_Area()
+        # Leave title bar unchanged, clear only middle of screen
         self.Draw_Back_First()
 
         custom_macro_count = len(self.custom_macros)
@@ -3167,7 +3488,7 @@ class E3v3seDisplay:
                 32,
                 self.lcd.screen_width / 2,
                 self.lcd.screen_height / 2,
-                "No macros"
+                "No macros",
             )
 
             self.lcd.draw_string_centered(
@@ -3179,7 +3500,7 @@ class E3v3seDisplay:
                 0,
                 self.lcd.screen_width / 2,
                 self.lcd.screen_height / 2 + 32,
-                "Please follow WIKI"
+                "Please follow WIKI",
             )
 
             self.lcd.draw_string_centered(
@@ -3191,7 +3512,7 @@ class E3v3seDisplay:
                 0,
                 self.lcd.screen_width / 2,
                 self.lcd.screen_height / 2 + 45,
-                "to include macros here"
+                "to include macros here",
             )
 
     def Draw_Info_Menu(self):
@@ -3214,7 +3535,11 @@ class E3v3seDisplay:
 
         # Bed size 80,95,110,140,155,170,200,215,230,260
         self.lcd.draw_icon(
-            True, self.selected_language, self.icon_TEXT_bed_size, self.LBLX, 75
+            True,
+            self.selected_language,
+            self.icon_TEXT_bed_size,
+            self.LBLX,
+            75,
         )
         self.lcd.draw_icon(True, self.ICON, self.icon_PrintSize, 20, 90)
         self.lcd.draw_string(
@@ -3248,7 +3573,11 @@ class E3v3seDisplay:
 
         # Contact details
         self.lcd.draw_icon(
-            True, self.selected_language, self.icon_TEXT_contact, self.LBLX, 185
+            True,
+            self.selected_language,
+            self.icon_TEXT_contact,
+            self.LBLX,
+            185,
         )
         self.lcd.draw_icon(True, self.ICON, self.icon_Contact, 20, 200)
         self.lcd.draw_string(
@@ -3287,17 +3616,41 @@ class E3v3seDisplay:
         )  # Print speed
         if self.pd.HAS_HOTEND:
             self.lcd.move_screen_area(
-                1, 197, 104, 238, 114, self.LBLX, self.MBASE(self.TUNE_CASE_TEMP)
+                1,
+                197,
+                104,
+                238,
+                114,
+                self.LBLX,
+                self.MBASE(self.TUNE_CASE_TEMP),
             )  # Hotend...
             self.lcd.move_screen_area(
-                1, 1, 89, 83, 101, self.LBLX + 44, self.MBASE(self.TUNE_CASE_TEMP)
+                1,
+                1,
+                89,
+                83,
+                101,
+                self.LBLX + 44,
+                self.MBASE(self.TUNE_CASE_TEMP),
             )  # Temperature
         if self.pd.HAS_HEATED_BED:
             self.lcd.move_screen_area(
-                1, 240, 104, 264, 114, self.LBLX, self.MBASE(self.TUNE_CASE_BED)
+                1,
+                240,
+                104,
+                264,
+                114,
+                self.LBLX,
+                self.MBASE(self.TUNE_CASE_BED),
             )  # Bed...
             self.lcd.move_screen_area(
-                1, 1, 89, 83, 101, self.LBLX + 27, self.MBASE(self.TUNE_CASE_BED)
+                1,
+                1,
+                89,
+                83,
+                101,
+                self.LBLX + 27,
+                self.MBASE(self.TUNE_CASE_BED),
             )  # ...Temperature
         if self.pd.HAS_FAN:
             self.lcd.move_screen_area(
@@ -3305,14 +3658,22 @@ class E3v3seDisplay:
             )  # Fan speed
         if self.pd.HAS_ZOFFSET_ITEM:
             self.lcd.move_screen_area(
-                1, 93, 179, 141, 189, self.LBLX, self.MBASE(self.TUNE_CASE_ZOFF)
+                1,
+                93,
+                179,
+                141,
+                189,
+                self.LBLX,
+                self.MBASE(self.TUNE_CASE_ZOFF),
             )  # Z-offset
         self.Draw_Back_First(self.select_tune.now == 0)
         if self.select_tune.now:
             self.Draw_Menu_Cursor(self.select_tune.now)
 
         self.Draw_Menu_Line_With_Only_Icons(
-            self.TUNE_CASE_SPEED, self.icon_speed, self.icon_TEXT_Printing_Speed
+            self.TUNE_CASE_SPEED,
+            self.icon_speed,
+            self.icon_TEXT_Printing_Speed,
         )
         self.lcd.draw_int_value(
             True,
@@ -3348,7 +3709,9 @@ class E3v3seDisplay:
 
         if self.pd.HAS_HEATED_BED:
             self.Draw_Menu_Line_With_Only_Icons(
-                self.TUNE_CASE_BED, self.icon_bedtemp, self.icon_TEXT_bed_temperature
+                self.TUNE_CASE_BED,
+                self.icon_bedtemp,
+                self.icon_TEXT_bed_temperature,
             )
             self.lcd.draw_int_value(
                 True,
@@ -3365,7 +3728,9 @@ class E3v3seDisplay:
 
         if self.pd.HAS_FAN:
             self.Draw_Menu_Line_With_Only_Icons(
-                self.TUNE_CASE_FAN, self.icon_FanSpeed, self.icon_TEXT_fan_speed
+                self.TUNE_CASE_FAN,
+                self.icon_FanSpeed,
+                self.icon_TEXT_fan_speed,
             )
             self.lcd.draw_int_value(
                 True,
@@ -3381,7 +3746,9 @@ class E3v3seDisplay:
             )
         if self.pd.HAS_ZOFFSET_ITEM:
             self.Draw_Menu_Line_With_Only_Icons(
-                self.TUNE_CASE_ZOFF, self.icon_z_offset, self.icon_TEXT_Z_Offset
+                self.TUNE_CASE_ZOFF,
+                self.icon_z_offset,
+                self.icon_TEXT_Z_Offset,
             )
             self.lcd.draw_signed_float(
                 True,
@@ -3414,7 +3781,8 @@ class E3v3seDisplay:
         i = 0
         if self.pd.HAS_HOTEND:
             i += 1
-            # self.Draw_Menu_Line( self.TEMP_CASE_TEMP, self.icon_SetEndTemp, "Nozzle Temperature")
+            # self.Draw_Menu_Line( self.TEMP_CASE_TEMP,
+            # self.icon_SetEndTemp, "Nozzle Temperature")
             self.Draw_Menu_Line_With_Only_Icons(
                 self.TEMP_CASE_TEMP,
                 self.icon_SetEndTemp,
@@ -3434,9 +3802,12 @@ class E3v3seDisplay:
             )
         if self.pd.HAS_HEATED_BED:
             i += 1
-            # self.Draw_Menu_Line( (self.TEMP_CASE_BED), self.icon_SetEndTemp, "Bed Temperature")
+            # self.Draw_Menu_Line( (self.TEMP_CASE_BED),
+            # self.icon_SetEndTemp, "Bed Temperature")
             self.Draw_Menu_Line_With_Only_Icons(
-                self.TEMP_CASE_BED, self.icon_SetEndTemp, self.icon_TEXT_bed_temperature
+                self.TEMP_CASE_BED,
+                self.icon_SetEndTemp,
+                self.icon_TEXT_bed_temperature,
             )
             self.lcd.draw_int_value(
                 True,
@@ -3497,9 +3868,15 @@ class E3v3seDisplay:
             1,
         )
         self.draw_max_en(self.MBASE(self.MOTION_CASE_RATE))
-        self.draw_speed_en(27, self.MBASE(self.MOTION_CASE_RATE))  # "Max Speed"
-        self.draw_max_accel_en(self.MBASE(self.MOTION_CASE_ACCEL))  # "Max Acceleration"
-        self.draw_steps_per_mm(self.MBASE(self.MOTION_CASE_STEPS))  # "Steps-per-mm"
+        self.draw_speed_en(
+            27, self.MBASE(self.MOTION_CASE_RATE)
+        )  # "Max Speed"
+        self.draw_max_accel_en(
+            self.MBASE(self.MOTION_CASE_ACCEL)
+        )  # "Max Acceleration"
+        self.draw_steps_per_mm(
+            self.MBASE(self.MOTION_CASE_STEPS)
+        )  # "Steps-per-mm"
 
         self.Draw_Back_First(self.select_motion.now == 0)
         if self.select_motion.now:
@@ -3526,9 +3903,11 @@ class E3v3seDisplay:
         """
         Only visual: Draws the "Move" menu on the display.
 
-        This method clears the main window and then proceeds to draw the "Move" header.
-        It also draws the options for moving the X, Y, and Z axes, as well as the extruder
-        option if available. It also handles drawing the menu cursor and separators.
+        This method clears the main window and then proceeds to draw the
+        "Move" header.
+        It also draws the options for moving the X, Y, and Z axes, as well
+        as the extruder option if available. It also handles drawing the
+        menu cursor and separators.
         """
         self.Clear_Main_Window()
         self.pd.get_additional_values()
@@ -3617,8 +3996,13 @@ class E3v3seDisplay:
             self.pd.current_position.e * self.MINUNITMULT,
         )
 
-    def Draw_Manual_Probe_Menu(self, draw_static_elements=False, draw_error=False):
-        if self.manual_probe == None or self.manual_probe.status["is_active"] == False:
+    def Draw_Manual_Probe_Menu(
+        self, draw_static_elements=False, draw_error=False
+    ):
+        if (
+            self.manual_probe is None
+            or self.manual_probe.status["is_active"] == False
+        ):
             self.Goto_MainMenu()
             return
 
@@ -3635,9 +4019,9 @@ class E3v3seDisplay:
                 self.selected_language,
                 self.icon_TEXT_header_leveling,
                 self.HEADER_HEIGHT,
-                1
+                1,
             )
-    
+
             self.lcd.draw_string(
                 False,
                 self.lcd.font_8x8,
@@ -3645,9 +4029,9 @@ class E3v3seDisplay:
                 self.color_background_black,
                 WINDOW_X,
                 WINDOW_Y,
-                "Step sizes:"
+                "Step sizes:",
             )
-            
+
             # Draw footer
             self.lcd.draw_string_centered(
                 False,
@@ -3658,9 +4042,9 @@ class E3v3seDisplay:
                 line_height,
                 self.lcd.screen_width / 2.0,
                 self.lcd.screen_height - line_height * 2.0,
-                "Tap to toggle between steps"
+                "Tap to toggle between steps",
             )
-            
+
             self.lcd.draw_string_centered(
                 False,
                 self.lcd.font_8x8,
@@ -3670,9 +4054,9 @@ class E3v3seDisplay:
                 line_height,
                 self.lcd.screen_width / 2.0,
                 self.lcd.screen_height - line_height,
-                "Long press to confirm"
+                "Long press to confirm",
             )
-            
+
         # Draw the individual steps in the selector
         step_count = len(self.MANUAL_PROBE_STEPS)
         box_margin = 5
@@ -3685,43 +4069,52 @@ class E3v3seDisplay:
             box_height = box_bottom - box_y
             self.lcd.draw_rectangle(
                 0,
-                self.color_yellow if i == self.manual_probe_step_index else self.color_popup_background,
+                (
+                    self.color_yellow
+                    if i == self.manual_probe_step_index
+                    else self.color_popup_background
+                ),
                 box_x,
                 box_y,
                 box_x + box_width,
-                box_bottom
+                box_bottom,
             )
-            
+
             if self.MANUAL_PROBE_STEPS[i] >= 0.1:
                 # Acount for both 1.0 and 0.1 steps
                 text = "%.1f" % self.MANUAL_PROBE_STEPS[i]
             else:
                 # Account for 0.05 step
                 text = "%.2f" % self.MANUAL_PROBE_STEPS[i]
-            
+
             self.lcd.draw_string_centered(
                 True,
                 self.lcd.font_8x8,
-                self.color_yellow if i == self.manual_probe_step_index else self.color_white,
+                (
+                    self.color_yellow
+                    if i == self.manual_probe_step_index
+                    else self.color_white
+                ),
                 self.color_background_black,
                 self.MENU_CHR_W,
                 self.MENU_CHR_W,
                 box_x + box_width / 2.0,
                 box_y + box_height / 2.0,
-                text
+                text,
             )
-        
+
         # Draw the current offset
         line_count += 2
         if not draw_static_elements:
-            # No need to clear the region, as the caller will clear the whole screen
+            # No need to clear the region, as the caller will clear the whole
+            # screen
             self.lcd.draw_rectangle(
                 1,
                 self.color_background_black,
                 WINDOW_X,
                 WINDOW_Y + self.MBASE(line_count) - 10,
                 WINDOW_X + WINDOW_WIDTH,
-                WINDOW_Y + self.MBASE(line_count + 1) - 10
+                WINDOW_Y + self.MBASE(line_count + 1) - 10,
             )
         self.lcd.draw_float_value(
             True,
@@ -3734,7 +4127,7 @@ class E3v3seDisplay:
             1,
             WINDOW_WIDTH / 2 - (5 * self.STAT_CHR_W) / 2,
             WINDOW_Y + self.MBASE(line_count) - 10,
-            self.manual_probe.status["z_position"] * self.MINUNITMULT
+            self.manual_probe.status["z_position"] * self.MINUNITMULT,
         )
 
         # Draw the error message
@@ -3745,7 +4138,7 @@ class E3v3seDisplay:
             WINDOW_X,
             WINDOW_Y + self.MBASE(line_count) - 10,
             WINDOW_X + WINDOW_WIDTH,
-            WINDOW_Y + self.MBASE(line_count + 1) - 10
+            WINDOW_Y + self.MBASE(line_count + 1) - 10,
         )
         if draw_error:
             self.lcd.draw_string_centered(
@@ -3757,7 +4150,7 @@ class E3v3seDisplay:
                 line_height,
                 self.lcd.screen_width / 2,
                 WINDOW_Y + self.MBASE(line_count) - 10,
-                "Out of range!"
+                "Out of range!",
             )
 
     def Draw_IconFinder(self):
@@ -3771,7 +4164,7 @@ class E3v3seDisplay:
             self.MENU_CHR_W,
             self.lcd.screen_width / 2,
             self.HEADER_HEIGHT / 2,
-            f"Icon finder"
+            "Icon finder",
         )
 
         self.lcd.draw_icon(
@@ -3779,7 +4172,7 @@ class E3v3seDisplay:
             self.ICON,
             self.select_icon_finder.now,
             self.lcd.screen_width / 2 - 16,
-            self.lcd.screen_height / 2 - 16
+            self.lcd.screen_height / 2 - 16,
         )
 
         self.lcd.draw_string_centered(
@@ -3791,7 +4184,7 @@ class E3v3seDisplay:
             0,
             self.lcd.screen_width / 2,
             self.lcd.screen_height - (self.MENU_CHR_W + 15) * 2,
-            "Icon %i" % self.select_icon_finder.now
+            "Icon %i" % self.select_icon_finder.now,
         )
 
         # Draw footer
@@ -3804,7 +4197,7 @@ class E3v3seDisplay:
             0,
             self.lcd.screen_width / 2,
             self.lcd.screen_height - self.MENU_CHR_W - 15,
-            "Press to exit"
+            "Press to exit",
         )
 
     def Goto_MainMenu(self):
@@ -3842,7 +4235,10 @@ class E3v3seDisplay:
         # Copy into filebuf string before entry
         name = self.pd.file_name
         if name:
-            npos = _MAX(0, self.lcd.screen_width - len(name) * self.MENU_CHR_W) / 2
+            npos = (
+                _MAX(0, self.lcd.screen_width - len(name) * self.MENU_CHR_W)
+                / 2
+            )
             self.lcd.draw_string(
                 False,
                 self.lcd.font_6x12,
@@ -3938,7 +4334,8 @@ class E3v3seDisplay:
         self.lcd.draw_rectangle(
             0, self.color_white, 15, self.HEADER_HEIGHT + 50, 225, 195
         )
-        self.select_cancel.set(1) # Cancel is the default option, so leave it hovered
+        # Cancel is the default option, so leave it hovered
+        self.select_cancel.set(1)
         self.select_confirm.reset()
         self.Draw_Confirm_Cancel_Buttons()
 
@@ -3957,11 +4354,17 @@ class E3v3seDisplay:
 
     def Popup_Window_ETempTooLow(self):
         """
-        Displays a popup window indicating that the extruder temperature is too low.
+        Displays a popup window indicating that the extruder
+        temperature is too low.
         """
         self.Clear_Main_Window()
         self.lcd.draw_rectangle(
-            1, self.color_popup_background, 15, self.HEADER_HEIGHT + 50, 225, 195
+            1,
+            self.color_popup_background,
+            15,
+            self.HEADER_HEIGHT + 50,
+            225,
+            195,
         )
         self.lcd.draw_icon(
             True,
@@ -3986,12 +4389,18 @@ class E3v3seDisplay:
         """
         # self.Clear_Main_Window()
         self.lcd.draw_rectangle(
-            1, self.color_popup_background, 15, self.HEADER_HEIGHT + 50, 225, 195
+            1,
+            self.color_popup_background,
+            15,
+            self.HEADER_HEIGHT + 50,
+            225,
+            195,
         )
         self.lcd.draw_rectangle(
             0, self.color_white, 15, self.HEADER_HEIGHT + 50, 225, 195
         )
-        # Draw text with "Feature not available on the screen. Please use klipper"
+        # Draw text with "Feature not available on the screen. Please use
+        # klipper"
         self.lcd.draw_string(
             False,
             self.lcd.font_8x8,
@@ -4037,18 +4446,38 @@ class E3v3seDisplay:
 
             # Given the message length, split it into multiple lines
             padding = 15
-            max_line = int((self.lcd.screen_width - padding * 4) / self.MENU_CHR_W)
+            max_line = int(
+                (self.lcd.screen_width - padding * 4) / self.MENU_CHR_W
+            )
             lines = textwrap.wrap(message, width=max_line)
 
             # Calculate sizing
             line_height = 18
             button_height = 31
             height = line_height * len(lines) + button_height + padding * 3
-            y = (self.lcd.screen_height - self.HEADER_HEIGHT) / 2 - height / 2 + self.HEADER_HEIGHT
+            y = (
+                (self.lcd.screen_height - self.HEADER_HEIGHT) / 2
+                - height / 2
+                + self.HEADER_HEIGHT
+            )
 
             # Draw the outline and fill
-            self.lcd.draw_rectangle(1, self.color_popup_background, padding, y, self.lcd.screen_width - padding, y + height)
-            self.lcd.draw_rectangle(0, self.color_white, padding, y, self.lcd.screen_width - padding, y + height)
+            self.lcd.draw_rectangle(
+                1,
+                self.color_popup_background,
+                padding,
+                y,
+                self.lcd.screen_width - padding,
+                y + height,
+            )
+            self.lcd.draw_rectangle(
+                0,
+                self.color_white,
+                padding,
+                y,
+                self.lcd.screen_width - padding,
+                y + height,
+            )
 
             # Draw each line
             y += padding
@@ -4060,17 +4489,22 @@ class E3v3seDisplay:
                     self.color_popup_background,
                     padding * 2,
                     y,
-                    line.strip()
+                    line.strip(),
                 )
-                y += line_height 
-            
+                y += line_height
+
             # Draw ok button
             y += padding
-            self.lcd.draw_icon(True, self.selected_language, self.icon_confirm_button, 80, y)
+            self.lcd.draw_icon(
+                True, self.selected_language, self.icon_confirm_button, 80, y
+            )
             self.lcd.draw_rectangle(0, self.color_white, 80, y, 160, y + 31)
         except Exception as e:
-            # I imagine that on an extreme scenario where firmware_restart is called and this tries to communicate with the LCD
-            # This could error out, very unlikely scenario, but either way it's better to catch it and log it
+            # I imagine that on an extreme scenario where
+            # firmware_restart is called and this tries to
+            # communicate with the LCD
+            # This could error out, very unlikely scenario,
+            # but either way it's better to catch it and log it
             self.error("Error in show_popup: %s" % e)
 
     def Erase_Menu_Cursor(self, line):
@@ -4126,7 +4560,8 @@ class E3v3seDisplay:
     def Redraw_SD_List(self):
         self.select_file.reset()
         self.index_file = self.MROWS
-        self.Clear_Menu_Area()  # Leave title bar unchanged, clear only middle of screen
+        self.Clear_Menu_Area()
+        # Leave title bar unchanged, clear only middle of screen
         self.Draw_Back_First()
         fl = self.pd.GetFiles()
         ed = len(fl)
@@ -4145,7 +4580,7 @@ class E3v3seDisplay:
                 32,
                 self.lcd.screen_width / 2,
                 self.lcd.screen_height / 2,
-                "No Media"
+                "No Media",
             )
 
     def CompletedHoming(self):
@@ -4156,7 +4591,9 @@ class E3v3seDisplay:
             self.index_prepare = self.MROWS
             self.Draw_Prepare_Menu()
         elif self.checkkey == self.Back_Main:
-            self.pd.HMI_ValueStruct.print_speed = self.pd.feedrate_percentage = 100
+            self.pd.HMI_ValueStruct.print_speed = (
+                self.pd.feedrate_percentage
+            ) = 100
             # dwin_zoffset = TERN0(HAS_BED_PROBE, probe.offset.z)
             # planner.finish_and_disable()
             self.Goto_MainMenu()
@@ -4166,9 +4603,15 @@ class E3v3seDisplay:
 
     def icon_Print(self):
         if self.select_page.now == 0:
-            self.lcd.draw_icon(True, self.ICON, self.icon_print_selected, 12, 51)
             self.lcd.draw_icon(
-                True, self.selected_language, self.icon_TEXT_Print_selected, 13, 120
+                True, self.ICON, self.icon_print_selected, 12, 51
+            )
+            self.lcd.draw_icon(
+                True,
+                self.selected_language,
+                self.icon_TEXT_Print_selected,
+                13,
+                120,
             )
             self.lcd.draw_rectangle(0, self.color_white, 12, 51, 112, 165)
             # self.lcd.move_screen_area(1, 1, 451, 31, 463, 57, 201)
@@ -4181,9 +4624,15 @@ class E3v3seDisplay:
 
     def icon_Prepare(self):
         if self.select_page.now == 1:
-            self.lcd.draw_icon(True, self.ICON, self.icon_prepare_selected, 126, 51)
             self.lcd.draw_icon(
-                True, self.selected_language, self.icon_TEXT_Prepare_selected, 127, 120
+                True, self.ICON, self.icon_prepare_selected, 126, 51
+            )
+            self.lcd.draw_icon(
+                True,
+                self.selected_language,
+                self.icon_TEXT_Prepare_selected,
+                127,
+                120,
             )
             self.lcd.draw_rectangle(0, self.color_white, 126, 51, 226, 165)
             # self.lcd.move_screen_area(1, 33, 451, 82, 466, 175, 201)
@@ -4196,9 +4645,15 @@ class E3v3seDisplay:
 
     def icon_Control(self):
         if self.select_page.now == 2:
-            self.lcd.draw_icon(True, self.ICON, self.icon_control_selected, 12, 178)
             self.lcd.draw_icon(
-                True, self.selected_language, self.icon_TEXT_Control_selected, 13, 247
+                True, self.ICON, self.icon_control_selected, 12, 178
+            )
+            self.lcd.draw_icon(
+                True,
+                self.selected_language,
+                self.icon_TEXT_Control_selected,
+                13,
+                247,
             )
             self.lcd.draw_rectangle(0, self.color_white, 12, 178, 112, 292)
             # self.lcd.move_screen_area(1, 85, 451, 132, 463, 48, 318)
@@ -4211,7 +4666,9 @@ class E3v3seDisplay:
 
     def icon_Misc(self, show):
         if show:
-            self.lcd.draw_icon(True, self.ICON, self.icon_leveling_selected, 126, 178)
+            self.lcd.draw_icon(
+                True, self.ICON, self.icon_leveling_selected, 126, 178
+            )
             self.lcd.draw_string_centered(
                 False,
                 self.lcd.font_8x8,
@@ -4221,7 +4678,7 @@ class E3v3seDisplay:
                 0,
                 175,
                 247,
-                "Misc"
+                "Misc",
             )
             self.lcd.draw_rectangle(0, self.color_white, 126, 178, 226, 292)
         else:
@@ -4235,7 +4692,7 @@ class E3v3seDisplay:
                 0,
                 175,
                 247,
-                "Misc"
+                "Misc",
             )
 
     def icon_StartInfo(self, show):
@@ -4249,9 +4706,15 @@ class E3v3seDisplay:
 
     def show_tune(self):
         if self.select_print.now == 0:
-            self.lcd.draw_icon(True, self.ICON, self.icon_tune_selected, 12, 191)
             self.lcd.draw_icon(
-                False, self.selected_language, self.icon_TEXT_Tune_selected, 12, 225
+                True, self.ICON, self.icon_tune_selected, 12, 191
+            )
+            self.lcd.draw_icon(
+                False,
+                self.selected_language,
+                self.icon_TEXT_Tune_selected,
+                12,
+                225,
             )
             self.lcd.draw_rectangle(0, self.color_white, 12, 191, 78, 251)
         else:
@@ -4263,9 +4726,15 @@ class E3v3seDisplay:
     def show_continue(self):
         # Todo: Where is icon for continue text? replace for text if not found
         if self.select_print.now == 1:
-            self.lcd.draw_icon(True, self.ICON, self.icon_continue_selected, 86, 191)
             self.lcd.draw_icon(
-                False, self.selected_language, self.icon_TEXT_Pause_selected, 86, 225
+                True, self.ICON, self.icon_continue_selected, 86, 191
+            )
+            self.lcd.draw_icon(
+                False,
+                self.selected_language,
+                self.icon_TEXT_Pause_selected,
+                86,
+                225,
             )
             self.lcd.draw_rectangle(0, self.color_white, 86, 191, 151, 251)
         else:
@@ -4277,9 +4746,15 @@ class E3v3seDisplay:
 
     def show_pause(self):
         if self.select_print.now == 1:
-            self.lcd.draw_icon(True, self.ICON, self.icon_pause_selected, 86, 191)
             self.lcd.draw_icon(
-                False, self.selected_language, self.icon_TEXT_Pause_selected, 86, 225
+                True, self.ICON, self.icon_pause_selected, 86, 191
+            )
+            self.lcd.draw_icon(
+                False,
+                self.selected_language,
+                self.icon_TEXT_Pause_selected,
+                86,
+                225,
             )
             self.lcd.draw_rectangle(0, self.color_white, 86, 191, 151, 251)
         else:
@@ -4290,9 +4765,15 @@ class E3v3seDisplay:
 
     def show_stop(self):
         if self.select_print.now == 2:
-            self.lcd.draw_icon(True, self.ICON, self.icon_stop_selected, 160, 191)
             self.lcd.draw_icon(
-                False, self.selected_language, self.icon_TEXT_Stop_selected, 160, 225
+                True, self.ICON, self.icon_stop_selected, 160, 191
+            )
+            self.lcd.draw_icon(
+                False,
+                self.selected_language,
+                self.icon_TEXT_Stop_selected,
+                160,
+                225,
             )
             self.lcd.draw_rectangle(0, self.color_white, 160, 191, 225, 251)
 
@@ -4372,7 +4853,12 @@ class E3v3seDisplay:
             print(self.pd.status)
             if self.pd.status == "printing":
                 self.Goto_PrintProcess()
-            elif self.pd.status in ["operational", "complete", "standby", "cancelled"]:
+            elif self.pd.status in [
+                "operational",
+                "complete",
+                "standby",
+                "cancelled",
+            ]:
                 self.Goto_MainMenu()
             elif self.pd.status == "error":
                 self.show_popup(self.printer.get_state_message())
@@ -4387,7 +4873,10 @@ class E3v3seDisplay:
             self.Goto_MainMenu()
 
         if self.checkkey == self.PrintProcess:
-            if self.pd.HMI_flag.print_finish and not self.pd.HMI_flag.done_confirm_flag:
+            if (
+                self.pd.HMI_flag.print_finish
+                and not self.pd.HMI_flag.done_confirm_flag
+            ):
                 self.pd.HMI_flag.print_finish = False
                 self.pd.HMI_flag.done_confirm_flag = True
                 # show percent bar and value
@@ -4424,20 +4913,35 @@ class E3v3seDisplay:
                 self.CompletedHoming()
 
         # If not in the following, draw the status area
-        status_area_blocklist = [self.MainMenu, self.MessagePopup, self.Misc, self.ManualProbeProcess, self.IconFinder]
+        status_area_blocklist = [
+            self.MainMenu,
+            self.MessagePopup,
+            self.Misc,
+            self.ManualProbeProcess,
+            self.IconFinder,
+        ]
         if update and self.checkkey not in status_area_blocklist:
             self.Draw_Status_Area(update)
 
         # Check for errors and/or incoming messages
-        if self.display_status is not None and self.display_status.message and len(self.display_status.message) > 0 and self.last_display_status != self.display_status.message:
+        if (
+            self.display_status is not None
+            and self.display_status.message
+            and len(self.display_status.message) > 0
+            and self.last_display_status != self.display_status.message
+        ):
             self.show_popup(self.display_status.message)
             self.last_display_status = self.display_status.message
 
         self.time_since_movement += 1
-        if (self.time_since_movement >= self.display_dim_timeout) & (not self.is_dimmed):
+        if (self.time_since_movement >= self.display_dim_timeout) & (
+            not self.is_dimmed
+        ):
             self.lcd.set_backlight_brightness(5)
             self.is_dimmed = True
-        elif (self.time_since_movement < self.display_dim_timeout) & (self.is_dimmed):
+        elif (self.time_since_movement < self.display_dim_timeout) & (
+            self.is_dimmed
+        ):
             self.lcd.set_backlight_brightness(40)
             self.is_dimmed = False
 
@@ -4526,8 +5030,10 @@ class E3v3seDisplay:
     def error(self, msg, *args, **kwargs):
         logging.error("E3V3SE Display: " + str(msg))
 
+
 def load_config(config):
     return E3v3seDisplay(config)
+
 
 def load_config_prefix(config):
     return E3v3seDisplayMacro(config)

@@ -64,7 +64,10 @@ class MCU_stepper:
             return self._name[8:]
         return self._name
     def get_pin_info(self):
-        return self._dir_pin, self._step_pin, self._invert_dir, self._invert_step
+        return self._dir_pin, \
+               self._step_pin, \
+               self._invert_dir, \
+               self._invert_step
     def units_in_radians(self):
         # Returns true if distances are in radians instead of millimeters
         return self._units_in_radians
