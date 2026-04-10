@@ -18,7 +18,8 @@ class DirZCtl:
         self.mcu.register_config_callback(self._build_config)
         self.mcu.register_serial_response(
             self._handle_debug_dirzctl,
-            "debug_dirzctl oid=%c arg[0]=%u arg[1]=%u arg[2]=%u arg[3]=%u arg[4]=%u arg[5]=%u",
+            ("debug_dirzctl oid=%c arg[0]=%u arg[1]=%u arg[2]=%u "
+            "arg[3]=%u arg[4]=%u arg[5]=%u"),
             self.oid)
         self.mcu.register_serial_response(
             self._handle_result_dirzctl,

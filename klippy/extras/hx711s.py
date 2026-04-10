@@ -48,7 +48,8 @@ class HX711S:
         )
         self.mcu.register_serial_response(
             self._handle_result_hx711s,
-            "result_hx711s oid=%c vd=%c it=%c tr=%hu nt=%u v0=%i v1=%i v2=%i v3=%i",
+            ("result_hx711s oid=%c vd=%c it=%c tr=%hu nt=%u v0=%i "
+            "v1=%i v2=%i v3=%i"),
             self.oid
         )
         self.printer.register_event_handler(
