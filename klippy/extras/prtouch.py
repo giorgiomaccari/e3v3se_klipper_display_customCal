@@ -755,7 +755,7 @@ speed_mm=%.2f step_us=%d step_cnt=%d"
                 "SET_GCODE_OFFSET Z_ADJUST=%f MOVE=1" % (z_adjust)
             )
 
-        z_probe[2] = homing_origin[2] + z_adjust - start_z_offset
+        z_probe._replace(bed_z = homing_origin[2] + z_adjust - start_z_offset)
         self.probe_calibrate_finalize(z_probe)
 
     cmd_PRTOUCH_ACCURACY_help = "Probe Z-height accuracy at sensoor position"
