@@ -746,7 +746,7 @@ speed_mm=%.2f step_us=%d step_cnt=%d"
         nozzle_z_offset = self.probe_z_offset(x, y)
         self.pnt_msg("Nozzle z_offset: %.3f" % nozzle_z_offset)
 
-        z_offset = z_probe[2] - nozzle_z_offset
+        z_offset = nozzle_z_offset - z_probe[2]
         self.pnt_msg("Calculated z_offset: %.3f" % z_offset)
 
         z_adjust = z_offset + start_z_offset
