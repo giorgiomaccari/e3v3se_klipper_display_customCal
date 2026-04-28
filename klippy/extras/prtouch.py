@@ -677,7 +677,7 @@ speed_mm=%.2f step_us=%d step_cnt=%d"
         return self.val.out_index, self.val.out_val_mm, True
 
     def probe_calibrate_finalize(self, z_probe):
-        if kin_pos is None:
+        if z_probe is None:
             return
         z_offset = z_probe.test_z - z_probe.bed_z
         probe_name = self.cfg.probe_name
