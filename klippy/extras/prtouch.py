@@ -9,6 +9,7 @@ import random
 import mcu
 import time
 from . import probe
+from . import manual_probe
 
 
 class PRTouchCFG:
@@ -675,10 +676,10 @@ speed_mm=%.2f step_us=%d step_cnt=%d"
             self.obj.hx711s.delay_s(0.005)
         return self.val.out_index, self.val.out_val_mm, True
 
-    def probe_calibrate_finalize(self, kin_pos):
+    def probe_calibrate_finalize(self, z_probe):
         if kin_pos is None:
             return
-        z_offset = -kin_pos[2]
+        z_offset = z_probe.test_z - z_probe.bed_z
         probe_name = self.cfg.probe_name
         gcode = self.obj.printer.lookup_object("gcode")
         gcode.respond_info(
@@ -745,7 +746,7 @@ speed_mm=%.2f step_us=%d step_cnt=%d"
         nozzle_z_offset = self.probe_z_offset(x, y)
         self.pnt_msg("Nozzle z_offset: %.3f" % nozzle_z_offset)
 
-        z_offset = nozzle_z_offset - z_probe[2]
+        z_offset = z_probe[2] - nozzle_z_offset
         self.pnt_msg("Calculated z_offset: %.3f" % z_offset)
 
         z_adjust = z_offset + start_z_offset
@@ -755,7 +756,10 @@ speed_mm=%.2f step_us=%d step_cnt=%d"
                 "SET_GCODE_OFFSET Z_ADJUST=%f MOVE=1" % (z_adjust)
             )
 
-        z_probe._replace(bed_z = homing_origin[2] + z_adjust - start_z_offset)
+        z_probe = manual_probe.create_probe_result(
+            (probe_x, probe_y, z_probe[2]),
+            (probe_x_offset, probe_y_offset, z_offset)
+        )
         self.probe_calibrate_finalize(z_probe)
 
     cmd_PRTOUCH_ACCURACY_help = "Probe Z-height accuracy at sensoor position"
