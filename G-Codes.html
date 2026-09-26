@@ -170,6 +170,12 @@
                 </li>
                 
                 <li class="md-select__item">
+                  <a href="/de/" hreflang="de" class="md-select__link">
+                    Deutsch
+                  </a>
+                </li>
+                
+                <li class="md-select__item">
                   <a href="/it/" hreflang="it" class="md-select__link">
                     Italiano
                   </a>
@@ -2000,6 +2006,13 @@
           <li class="md-nav__item">
   <a href="#probe_eddy_current_calibrate" class="md-nav__link">
     PROBE_EDDY_CURRENT_CALIBRATE
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#probe_eddy_current_tap_calibrate" class="md-nav__link">
+    PROBE_EDDY_CURRENT_TAP_CALIBRATE
   </a>
   
 </li>
@@ -4369,6 +4382,13 @@
 </li>
         
           <li class="md-nav__item">
+  <a href="#probe_eddy_current_tap_calibrate" class="md-nav__link">
+    PROBE_EDDY_CURRENT_TAP_CALIBRATE
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
   <a href="#ldc_calibrate_drive_current" class="md-nav__link">
     LDC_CALIBRATE_DRIVE_CURRENT
   </a>
@@ -5636,16 +5656,19 @@ or <a href="Config_Reference.html#hall_filament_width_sensor">hall filament widt
 is enabled (also see <a href="TSL1401CL_Filament_Width_Sensor.html">TSLl401CL Filament Width Sensor</a>
 and <a href="Hall_Filament_Width_Sensor.html">Hall Filament Width Sensor</a>):</p>
 <h4 id="query_filament_width">QUERY_FILAMENT_WIDTH<a class="headerlink" href="#query_filament_width" title="Permanent link">&para;</a></h4>
-<p><code>QUERY_FILAMENT_WIDTH</code>: Return the current measured filament width.</p>
+<p><code>QUERY_FILAMENT_WIDTH</code>: Return the current measured filament width, the
+state of the width sensor, the state of the filament sensor and the state
+of flow compensation.</p>
 <h4 id="reset_filament_width_sensor">RESET_FILAMENT_WIDTH_SENSOR<a class="headerlink" href="#reset_filament_width_sensor" title="Permanent link">&para;</a></h4>
 <p><code>RESET_FILAMENT_WIDTH_SENSOR</code>: Clear all sensor readings. Helpful
-after filament change.</p>
+after filament change. Resets flow rate to 100%.</p>
 <h4 id="disable_filament_width_sensor">DISABLE_FILAMENT_WIDTH_SENSOR<a class="headerlink" href="#disable_filament_width_sensor" title="Permanent link">&para;</a></h4>
 <p><code>DISABLE_FILAMENT_WIDTH_SENSOR</code>: Turn off the filament width sensor
-and stop using it for flow control.</p>
+and stop using it for flow compensation. Resets flow rate to 100%.</p>
 <h4 id="enable_filament_width_sensor">ENABLE_FILAMENT_WIDTH_SENSOR<a class="headerlink" href="#enable_filament_width_sensor" title="Permanent link">&para;</a></h4>
-<p><code>ENABLE_FILAMENT_WIDTH_SENSOR</code>: Turn on the filament width sensor and
-start using it for flow control.</p>
+<p><code>ENABLE_FILAMENT_WIDTH_SENSOR [FLOW_COMPENSATION=[0|1]</code>: Turn on the filament
+width sensor and enable or disable flow compensation. If <code>FLOW_COMPENSATION</code>
+is not specified, the current flow compensation state is preserved.</p>
 <h4 id="query_raw_filament_width">QUERY_RAW_FILAMENT_WIDTH<a class="headerlink" href="#query_raw_filament_width" title="Permanent link">&para;</a></h4>
 <p><code>QUERY_RAW_FILAMENT_WIDTH</code>: Return the current ADC channel readings
 and RAW sensor value for calibration points.</p>
@@ -6053,6 +6076,11 @@ that calibrates the sensor resonance frequencies to corresponding Z
 heights. The tool will take a couple of minutes to complete. After
 completion, use the SAVE_CONFIG command to store the results in the
 printer.cfg file.</p>
+<h4 id="probe_eddy_current_tap_calibrate">PROBE_EDDY_CURRENT_TAP_CALIBRATE<a class="headerlink" href="#probe_eddy_current_tap_calibrate" title="Permanent link">&para;</a></h4>
+<p><code>PROBE_EDDY_CURRENT_TAP_CALIBRATE [TAP=guess|refine|verify]</code>: This
+starts a tool that can calibrate the probe's "tap_threshold"
+parameter. See the
+<a href="Eddy_Probe.html#tap-calibration">eddy probe documentation</a> for details.</p>
 <h4 id="ldc_calibrate_drive_current">LDC_CALIBRATE_DRIVE_CURRENT<a class="headerlink" href="#ldc_calibrate_drive_current" title="Permanent link">&para;</a></h4>
 <p><code>LDC_CALIBRATE_DRIVE_CURRENT CHIP=&lt;config_name&gt;</code> This tool will
 calibrate the ldc1612 DRIVE_CURRENT0 register. Prior to using this
@@ -6329,13 +6357,15 @@ no change is applied.</p>
 <a href="Config_Reference.html#temperature_probe">temperature_probe config section</a>
 is enabled.</p>
 <h4 id="temperature_probe_calibrate">TEMPERATURE_PROBE_CALIBRATE<a class="headerlink" href="#temperature_probe_calibrate" title="Permanent link">&para;</a></h4>
-<p><code>TEMPERATURE_PROBE_CALIBRATE [PROBE=&lt;probe name&gt;] [TARGET=&lt;value&gt;] [STEP=&lt;value&gt;]</code>:
+<p><code>TEMPERATURE_PROBE_CALIBRATE [PROBE=&lt;probe name&gt;] [TARGET=&lt;value&gt;] [STEP=&lt;value&gt;]
+[METHOD=&lt;method&gt;]</code>:
 Initiates probe drift calibration for eddy current based probes.  The <code>TARGET</code>
 is a target temperature for the last sample.  When the temperature recorded
 during a sample exceeds the <code>TARGET</code> calibration will complete.  The <code>STEP</code>
 parameter sets temperature delta (in C) between samples. After a sample has
 been taken, this delta is used to schedule a call to <code>TEMPERATURE_PROBE_NEXT</code>.
-The default <code>STEP</code> is 2.</p>
+The default <code>STEP</code> is 2. The <code>METHOD</code> only supports <code>tap</code> as an option,
+if specified, probing will be automated.</p>
 <h4 id="temperature_probe_next">TEMPERATURE_PROBE_NEXT<a class="headerlink" href="#temperature_probe_next" title="Permanent link">&para;</a></h4>
 <p><code>TEMPERATURE_PROBE_NEXT</code>: After calibration has started this command is run to
 take the next sample.  It is automatically scheduled to run when the delta
