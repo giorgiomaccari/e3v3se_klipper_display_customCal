@@ -16,6 +16,7 @@ class DirZCtl:
         self.oid = self.mcu.create_oid()
         self.steppers = []
         self.mcu.register_config_callback(self._build_config)
+<<<<<<< HEAD
         self.mcu.register_serial_response(
             self._handle_debug_dirzctl,
             ("debug_dirzctl oid=%c arg[0]=%u arg[1]=%u arg[2]=%u "
@@ -31,6 +32,25 @@ class DirZCtl:
             "klippy:shutdown", self._handle_shutdown)
         self.printer.register_event_handler(
             "klippy:disconnect", self._handle_disconnect)
+||||||| merged common ancestors
+        self.mcu.register_response(self._handle_debug_dirzctl, "debug_dirzctl", self.oid)
+        self.mcu.register_response(self._handle_result_dirzctl, "result_dirzctl", self.oid)
+        self.printer.register_event_handler('klippy:mcu_identify', self._handle_mcu_identify)
+        self.printer.register_event_handler("klippy:shutdown", self._handle_shutdown)
+        self.printer.register_event_handler("klippy:disconnect", self._handle_disconnect)
+=======
+        self.mcu.register_serial_response(
+            self._handle_debug_dirzctl,
+            "debug_dirzctl oid=%c arg[0]=%u arg[1]=%u arg[2]=%u arg[3]=%u arg[4]=%u arg[5]=%u",
+            self.oid)
+        self.mcu.register_serial_response(
+            self._handle_result_dirzctl,
+            "result_dirzctl oid=%c step=%u tick=%u",
+            self.oid)
+        self.printer.register_event_handler('klippy:mcu_identify', self._handle_mcu_identify)
+        self.printer.register_event_handler("klippy:shutdown", self._handle_shutdown)
+        self.printer.register_event_handler("klippy:disconnect", self._handle_disconnect)
+>>>>>>> d74d36bb69bd8c561a169fd99e8c83e254318562
         self.gcode = self.printer.lookup_object("gcode")
         self.gcode.register_command(
             'DIRZCTL', self.cmd_DIRZCTL, desc=self.cmd_DIRZCTL_help)

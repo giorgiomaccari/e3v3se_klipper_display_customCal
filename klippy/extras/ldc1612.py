@@ -1,9 +1,9 @@
 # Support for reading frequency samples from ldc1612
 #
-# Copyright (C) 2020-2024  Kevin O'Connor <kevin@koconnor.net>
+# Copyright (C) 2020-2026  Kevin O'Connor <kevin@koconnor.net>
 #
 # This file may be distributed under the terms of the GNU GPLv3 license.
-import logging
+import logging, math
 from . import bus, bulk_sensor
 
 MIN_MSG_TIME = 0.100
@@ -76,9 +76,10 @@ class DriveCurrentCalibrate:
 class LDC1612:
     def __init__(self, config, calibration=None):
         self.printer = config.get_printer()
+        self.name = config.get_name().split()[-1]
         self.calibration = calibration
         self.dccal = DriveCurrentCalibrate(config, self)
-        self.data_rate = 250
+        self.data_rate = 400
         # Setup mcu sensor_ldc1612 bulk query code
         self.i2c = bus.MCU_I2C_from_config(config,
                                            default_addr=LDC1612_ADDR,
@@ -89,10 +90,34 @@ class LDC1612:
         self.query_ldc1612_cmd = None
         self.clock_freq = config.getint("frequency", DEFAULT_LDC1612_FREQ,
                                         2000000, 40000000)
+        # Determine sensor divider (want 4*max_hz < clock_ref)
+        max_hz = config.getfloat("max_sensor_hz", 5000000., 3000000., 20000000.)
+        self.sensor_div = int(math.ceil(4. * max_hz / self.clock_freq))
+        self.freq_conv = float(self.clock_freq * self.sensor_div) / (1<<28)
+<<<<<<< HEAD
+||||||| merged common ancestors
+||||||||| 5eabae67
+        self.ldc1612_setup_home_cmd = self.query_ldc1612_home_state_cmd = None
+        self.frequency = config.getint("frequency", DEFAULT_LDC1612_FREQ,
+                                       2000000, 40000000)
+=========
+        self.clock_freq = config.getint("frequency", DEFAULT_LDC1612_FREQ,
+                                        2000000, 40000000)
         # Coil frequency divider, assume 12MHz is BTT Eddy
         # BTT Eddy's coil frequency is > 1/4 of reference clock
         self.sensor_div = 1 if self.clock_freq != DEFAULT_LDC1612_FREQ else 2
         self.freq_conv = float(self.clock_freq * self.sensor_div) / (1<<28)
+>>>>>>>>> Temporary merge branch 2
+=======
+        if self.calibration is not None:
+            cal_freqs, cal_zpos = self.calibration.get_calibration()
+            if cal_freqs and max(cal_freqs) > max_hz:
+                pconfig = self.printer.lookup_object("configfile")
+                pconfig.runtime_warning(
+                    "ldc1612 %s: Should set 'max_sensor_hz' to at least %d"
+                    % (self.name, math.ceil(max(cal_freqs))))
+        # Configure intb and mcu object
+>>>>>>> d74d36bb69bd8c561a169fd99e8c83e254318562
         if config.get('intb_pin', None) is not None:
             ppins = config.get_printer().lookup_object("pins")
             pin_params = ppins.lookup_pin(config.get('intb_pin'))
@@ -115,7 +140,6 @@ class LDC1612:
         self.batch_bulk = bulk_sensor.BatchBulkHelper(
             self.printer, self._process_batch,
             self._start_measurements, self._finish_measurements, BATCH_UPDATES)
-        self.name = config.get_name().split()[-1]
         hdr = ('time', 'frequency', 'z')
         self.batch_bulk.add_mux_endpoint("ldc1612/dump_ldc1612", "sensor",
                                          self.name, {'header': hdr})
@@ -146,9 +170,54 @@ class LDC1612:
                            minclock=minclock)
     def add_client(self, cb):
         self.batch_bulk.add_client(cb)
+<<<<<<< HEAD
     def lookup_sensor_error(self, error):
         return self._sensor_errors.get(error, "Unknown ldc1612 error")
     def convert_frequency(self, freq):
+||||||| merged common ancestors
+<<<<<<<<< Temporary merge branch 1
+    # Homing
+    def setup_home(self, print_time, trigger_freq,
+                   trsync_oid, hit_reason, err_reason):
+        clock = self.mcu.print_time_to_clock(print_time)
+        tfreq = int(trigger_freq / self.freq_conv + 0.5)
+        self.ldc1612_setup_home_cmd.send(
+            [self.oid, clock, tfreq, trsync_oid, hit_reason, err_reason])
+    def clear_home(self):
+        self.ldc1612_setup_home_cmd.send([self.oid, 0, 0, 0, 0, 0])
+        if self.mcu.is_fileoutput():
+            return 0.
+        params = self.query_ldc1612_home_state_cmd.send([self.oid])
+        tclock = self.mcu.clock32_to_clock64(params['trigger_clock'])
+        return self.mcu.clock_to_print_time(tclock)
+    def lookup_sensor_error(self, error):
+        return self._sensor_errors.get(error, "Unknown ldc1612 error")
+||||||||| 5eabae67
+    # Homing
+    def setup_home(self, print_time, trigger_freq,
+                   trsync_oid, hit_reason, err_reason):
+        clock = self.mcu.print_time_to_clock(print_time)
+        tfreq = int(trigger_freq * (1<<28) / float(self.frequency) + 0.5)
+        self.ldc1612_setup_home_cmd.send(
+            [self.oid, clock, tfreq, trsync_oid, hit_reason, err_reason])
+    def clear_home(self):
+        self.ldc1612_setup_home_cmd.send([self.oid, 0, 0, 0, 0, 0])
+        if self.mcu.is_fileoutput():
+            return 0.
+        params = self.query_ldc1612_home_state_cmd.send([self.oid])
+        tclock = self.mcu.clock32_to_clock64(params['trigger_clock'])
+        return self.mcu.clock_to_print_time(tclock)
+=========
+    def lookup_sensor_error(self, error):
+        return self._sensor_errors.get(error, "Unknown ldc1612 error")
+    def convert_frequency(self, freq):
+=======
+    def lookup_sensor_error(self, error):
+        return self._sensor_errors.get(error, "Unknown ldc1612 error")
+    def convert_raw_to_frequency(self, raw_value):
+        return raw_value * self.freq_conv
+    def convert_frequency_to_raw(self, freq):
+>>>>>>> d74d36bb69bd8c561a169fd99e8c83e254318562
         return int(freq / self.freq_conv + 0.5)
     # Measurement decoding
     def _convert_samples(self, samples):

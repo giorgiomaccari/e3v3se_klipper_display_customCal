@@ -780,19 +780,22 @@ is enabled (also see [TSLl401CL Filament Width Sensor](TSL1401CL_Filament_Width_
 and [Hall Filament Width Sensor](Hall_Filament_Width_Sensor.md)):
 
 #### QUERY_FILAMENT_WIDTH
-`QUERY_FILAMENT_WIDTH`: Return the current measured filament width.
+`QUERY_FILAMENT_WIDTH`: Return the current measured filament width, the
+state of the width sensor, the state of the filament sensor and the state
+of flow compensation.
 
 #### RESET_FILAMENT_WIDTH_SENSOR
 `RESET_FILAMENT_WIDTH_SENSOR`: Clear all sensor readings. Helpful
-after filament change.
+after filament change. Resets flow rate to 100%.
 
 #### DISABLE_FILAMENT_WIDTH_SENSOR
 `DISABLE_FILAMENT_WIDTH_SENSOR`: Turn off the filament width sensor
-and stop using it for flow control.
+and stop using it for flow compensation. Resets flow rate to 100%.
 
 #### ENABLE_FILAMENT_WIDTH_SENSOR
-`ENABLE_FILAMENT_WIDTH_SENSOR`: Turn on the filament width sensor and
-start using it for flow control.
+`ENABLE_FILAMENT_WIDTH_SENSOR [FLOW_COMPENSATION=[0|1]`: Turn on the filament
+width sensor and enable or disable flow compensation. If `FLOW_COMPENSATION`
+is not specified, the current flow compensation state is preserved.
 
 #### QUERY_RAW_FILAMENT_WIDTH
 `QUERY_RAW_FILAMENT_WIDTH`: Return the current ADC channel readings
@@ -1266,6 +1269,12 @@ heights. The tool will take a couple of minutes to complete. After
 completion, use the SAVE_CONFIG command to store the results in the
 printer.cfg file.
 
+#### PROBE_EDDY_CURRENT_TAP_CALIBRATE
+`PROBE_EDDY_CURRENT_TAP_CALIBRATE [TAP=guess|refine|verify]`: This
+starts a tool that can calibrate the probe's "tap_threshold"
+parameter. See the
+[eddy probe documentation](Eddy_Probe.md#tap-calibration) for details.
+
 #### LDC_CALIBRATE_DRIVE_CURRENT
 `LDC_CALIBRATE_DRIVE_CURRENT CHIP=<config_name>` This tool will
 calibrate the ldc1612 DRIVE_CURRENT0 register. Prior to using this
@@ -1594,13 +1603,15 @@ The following commands are available when a
 is enabled.
 
 #### TEMPERATURE_PROBE_CALIBRATE
-`TEMPERATURE_PROBE_CALIBRATE [PROBE=<probe name>] [TARGET=<value>] [STEP=<value>]`:
+`TEMPERATURE_PROBE_CALIBRATE [PROBE=<probe name>] [TARGET=<value>] [STEP=<value>]
+[METHOD=<method>]`:
 Initiates probe drift calibration for eddy current based probes.  The `TARGET`
 is a target temperature for the last sample.  When the temperature recorded
 during a sample exceeds the `TARGET` calibration will complete.  The `STEP`
 parameter sets temperature delta (in C) between samples. After a sample has
 been taken, this delta is used to schedule a call to `TEMPERATURE_PROBE_NEXT`.
-The default `STEP` is 2.
+The default `STEP` is 2. The `METHOD` only supports `tap` as an option,
+if specified, probing will be automated.
 
 #### TEMPERATURE_PROBE_NEXT
 `TEMPERATURE_PROBE_NEXT`: After calibration has started this command is run to

@@ -41,6 +41,7 @@ class HX711S:
         )
         self.oid = self.mcu.create_oid()
         self.mcu.register_config_callback(self._build_config)
+<<<<<<< HEAD
         self.mcu.register_serial_response(
             self._handle_debug_hx711s,
             "debug_hx711s oid=%c arg[0]=%u arg[1]=%u arg[2]=%u arg[3]=%u",
@@ -64,12 +65,33 @@ class HX711S:
         self.gcode.register_command(
             "READ_HX711", self.cmd_READ_HX711, desc=self.cmd_READ_HX711_help
         )
+||||||| merged common ancestors
+        self.mcu.register_response(self._handle_debug_hx711s, "debug_hx711s", self.oid)
+        self.mcu.register_response(self._handle_result_hx711s, "result_hx711s", self.oid)
+        self.printer.register_event_handler('klippy:mcu_identify', self._handle_mcu_identify)
+        self.printer.register_event_handler("klippy:shutdown", self._handle_shutdown)
+        self.printer.register_event_handler("klippy:disconnect", self._handle_disconnect)
+        self.gcode.register_command('READ_HX711', self.cmd_READ_HX711, desc=self.cmd_READ_HX711_help)
+=======
+        self.mcu.register_serial_response(
+            self._handle_debug_hx711s,
+            "debug_hx711s oid=%c arg[0]=%u arg[1]=%u arg[2]=%u arg[3]=%u",
+            self.oid)
+        self.mcu.register_serial_response(
+            self._handle_result_hx711s,
+            "result_hx711s oid=%c vd=%c it=%c tr=%hu nt=%u v0=%i v1=%i v2=%i v3=%i",
+            self.oid)
+        self.printer.register_event_handler('klippy:mcu_identify', self._handle_mcu_identify)
+        self.printer.register_event_handler("klippy:shutdown", self._handle_shutdown)
+        self.printer.register_event_handler("klippy:disconnect", self._handle_disconnect)
+        self.gcode.register_command('READ_HX711', self.cmd_READ_HX711, desc=self.cmd_READ_HX711_help)
+>>>>>>> d74d36bb69bd8c561a169fd99e8c83e254318562
         self.pi_count = int(0)
         self.show_msg = False
         self.filter = None
         self.query_cmd = None
         self.mcu_freq = 72000000
-        self.last_send_heart = 0.0
+        self.last_send_heart = 0.
         self.is_shutdown = True
         self.is_timeout = True
         pass

@@ -37,8 +37,8 @@ class SerialBridge:
         self.configs = []
         for n, mcu in self.mcus:
             constants = mcu.get_constants()
-            configs = (
-                ["%s=%s" % (k, v) for k, v in constants.items()
+            configs= (
+                ["%s=%s" % (k, v) for k,v in constants.items() \
                     if k.startswith("SERIAL_BRIDGE_CONFIG")])
 
             self.configs.extend(configs)
@@ -159,10 +159,18 @@ class PrinterSerialBridge:
 
         cmd_queue = self.mcu.alloc_command_queue()
 
+<<<<<<< HEAD
         self.mcu.register_serial_response(self._handle_serial_bridge_response,
                                           ("serial_bridge_response oid=%c "
                                           "text=%*s"),
                                           self.oid)
+||||||| merged common ancestors
+        self.mcu.register_response(self._handle_serial_bridge_response,
+            "serial_bridge_response", self.oid)
+=======
+        self.mcu.register_serial_response(self._handle_serial_bridge_response,
+            "serial_bridge_response oid=%c text=%*s", self.oid)
+>>>>>>> d74d36bb69bd8c561a169fd99e8c83e254318562
         self.serial_bridge_send_cmd = self.mcu.lookup_command(
             "serial_bridge_send oid=%c text=%*s",
             cq=cmd_queue)
