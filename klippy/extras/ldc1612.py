@@ -94,21 +94,6 @@ class LDC1612:
         max_hz = config.getfloat("max_sensor_hz", 5000000., 3000000., 20000000.)
         self.sensor_div = int(math.ceil(4. * max_hz / self.clock_freq))
         self.freq_conv = float(self.clock_freq * self.sensor_div) / (1<<28)
-<<<<<<< HEAD
-||||||| merged common ancestors
-||||||||| 5eabae67
-        self.ldc1612_setup_home_cmd = self.query_ldc1612_home_state_cmd = None
-        self.frequency = config.getint("frequency", DEFAULT_LDC1612_FREQ,
-                                       2000000, 40000000)
-=========
-        self.clock_freq = config.getint("frequency", DEFAULT_LDC1612_FREQ,
-                                        2000000, 40000000)
-        # Coil frequency divider, assume 12MHz is BTT Eddy
-        # BTT Eddy's coil frequency is > 1/4 of reference clock
-        self.sensor_div = 1 if self.clock_freq != DEFAULT_LDC1612_FREQ else 2
-        self.freq_conv = float(self.clock_freq * self.sensor_div) / (1<<28)
->>>>>>>>> Temporary merge branch 2
-=======
         if self.calibration is not None:
             cal_freqs, cal_zpos = self.calibration.get_calibration()
             if cal_freqs and max(cal_freqs) > max_hz:
@@ -117,7 +102,6 @@ class LDC1612:
                     "ldc1612 %s: Should set 'max_sensor_hz' to at least %d"
                     % (self.name, math.ceil(max(cal_freqs))))
         # Configure intb and mcu object
->>>>>>> d74d36bb69bd8c561a169fd99e8c83e254318562
         if config.get('intb_pin', None) is not None:
             ppins = config.get_printer().lookup_object("pins")
             pin_params = ppins.lookup_pin(config.get('intb_pin'))
@@ -170,54 +154,11 @@ class LDC1612:
                            minclock=minclock)
     def add_client(self, cb):
         self.batch_bulk.add_client(cb)
-<<<<<<< HEAD
-    def lookup_sensor_error(self, error):
-        return self._sensor_errors.get(error, "Unknown ldc1612 error")
-    def convert_frequency(self, freq):
-||||||| merged common ancestors
-<<<<<<<<< Temporary merge branch 1
-    # Homing
-    def setup_home(self, print_time, trigger_freq,
-                   trsync_oid, hit_reason, err_reason):
-        clock = self.mcu.print_time_to_clock(print_time)
-        tfreq = int(trigger_freq / self.freq_conv + 0.5)
-        self.ldc1612_setup_home_cmd.send(
-            [self.oid, clock, tfreq, trsync_oid, hit_reason, err_reason])
-    def clear_home(self):
-        self.ldc1612_setup_home_cmd.send([self.oid, 0, 0, 0, 0, 0])
-        if self.mcu.is_fileoutput():
-            return 0.
-        params = self.query_ldc1612_home_state_cmd.send([self.oid])
-        tclock = self.mcu.clock32_to_clock64(params['trigger_clock'])
-        return self.mcu.clock_to_print_time(tclock)
-    def lookup_sensor_error(self, error):
-        return self._sensor_errors.get(error, "Unknown ldc1612 error")
-||||||||| 5eabae67
-    # Homing
-    def setup_home(self, print_time, trigger_freq,
-                   trsync_oid, hit_reason, err_reason):
-        clock = self.mcu.print_time_to_clock(print_time)
-        tfreq = int(trigger_freq * (1<<28) / float(self.frequency) + 0.5)
-        self.ldc1612_setup_home_cmd.send(
-            [self.oid, clock, tfreq, trsync_oid, hit_reason, err_reason])
-    def clear_home(self):
-        self.ldc1612_setup_home_cmd.send([self.oid, 0, 0, 0, 0, 0])
-        if self.mcu.is_fileoutput():
-            return 0.
-        params = self.query_ldc1612_home_state_cmd.send([self.oid])
-        tclock = self.mcu.clock32_to_clock64(params['trigger_clock'])
-        return self.mcu.clock_to_print_time(tclock)
-=========
-    def lookup_sensor_error(self, error):
-        return self._sensor_errors.get(error, "Unknown ldc1612 error")
-    def convert_frequency(self, freq):
-=======
     def lookup_sensor_error(self, error):
         return self._sensor_errors.get(error, "Unknown ldc1612 error")
     def convert_raw_to_frequency(self, raw_value):
         return raw_value * self.freq_conv
     def convert_frequency_to_raw(self, freq):
->>>>>>> d74d36bb69bd8c561a169fd99e8c83e254318562
         return int(freq / self.freq_conv + 0.5)
     # Measurement decoding
     def _convert_samples(self, samples):

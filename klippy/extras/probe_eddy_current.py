@@ -39,49 +39,11 @@ class EddyCalibration:
         if cal is not None:
             cal = [list(map(float, d.strip().split(':', 1)))
                    for d in cal.split(',')]
-<<<<<<< HEAD
-            self.load_calibration(cal)
-        # Probe calibrate state
-        self.probe_speed = 0.
-        # Register commands
-        cname = self.name.split()[-1]
-        gcode = self.printer.lookup_object('gcode')
-        gcode.register_mux_command("PROBE_EDDY_CURRENT_CALIBRATE", "CHIP",
-                                   cname, self.cmd_EDDY_CALIBRATE,
-                                   desc=self.cmd_EDDY_CALIBRATE_help)
-        gcode.register_command('Z_OFFSET_APPLY_PROBE',
-                               self.cmd_Z_OFFSET_APPLY_PROBE,
-                               desc=self.cmd_Z_OFFSET_APPLY_PROBE_help)
-||||||| merged common ancestors
-            self.load_calibration(cal)
-        # Probe calibrate state
-        self.probe_speed = 0.
-        # Register commands
-        cname = self.name.split()[-1]
-        gcode = self.printer.lookup_object('gcode')
-        gcode.register_mux_command("PROBE_EDDY_CURRENT_CALIBRATE", "CHIP",
-                                   cname, self.cmd_EDDY_CALIBRATE,
-                                   desc=self.cmd_EDDY_CALIBRATE_help)
-<<<<<<<<< Temporary merge branch 1
-        gcode.register_command('Z_OFFSET_APPLY_PROBE',
-                               self.cmd_Z_OFFSET_APPLY_PROBE,
-                               desc=self.cmd_Z_OFFSET_APPLY_PROBE_help)
-    def is_calibrated(self):
-        return len(self.cal_freqs) > 2
-||||||||| 5eabae67
-    def is_calibrated(self):
-        return len(self.cal_freqs) > 2
-=========
-        gcode.register_command('Z_OFFSET_APPLY_PROBE',
-                               self.cmd_Z_OFFSET_APPLY_PROBE,
-                               desc=self.cmd_Z_OFFSET_APPLY_PROBE_help)
-=======
             self._load_calibration(cal)
     def _load_calibration(self, cal):
         cal = sorted([(c[1], c[0]) for c in cal])
         self.cal_freqs = [c[0] for c in cal]
         self.cal_zpos = [c[1] for c in cal]
->>>>>>> d74d36bb69bd8c561a169fd99e8c83e254318562
     def get_printer(self):
         return self.printer
     def note_z_calibration_start(self):
@@ -94,21 +56,8 @@ class EddyCalibration:
         if len(self.cal_freqs) <= 2:
             raise self.printer.command_error(
                 "Must calibrate probe_eddy_current first")
-<<<<<<< HEAD
-    def load_calibration(self, cal):
-        cal = sorted([(c[1], c[0]) for c in cal])
-        self.cal_freqs = [c[0] for c in cal]
-        self.cal_zpos = [c[1] for c in cal]
-||||||| merged common ancestors
->>>>>>>>> Temporary merge branch 2
-    def load_calibration(self, cal):
-        cal = sorted([(c[1], c[0]) for c in cal])
-        self.cal_freqs = [c[0] for c in cal]
-        self.cal_zpos = [c[1] for c in cal]
-=======
     def get_calibration(self):
         return list(self.cal_freqs), list(self.cal_zpos)
->>>>>>> d74d36bb69bd8c561a169fd99e8c83e254318562
     def apply_calibration(self, samples):
         cur_temp = self.drift_comp.get_temperature()
         for i, (samp_time, freq, dummy_z) in enumerate(samples):
@@ -465,7 +414,7 @@ class EddyTapCalibration:
             if mc_coeffs is None:
                 raise gcmd.error(
                     "Must complete PROBE_EDDY_CURRENT_CALIBRATE first")
-            self._try_tap(gcmd, mc_coeffs[1][0] * -0.15)
+            self._try_tap(gcmd, mc_coeffs[1][0] * -0.10)
         elif tap_test == 'refine':
             # Attempt tap based on change in slope observed during last tap
             self._refine_tap_threshold = None
@@ -475,9 +424,6 @@ class EddyTapCalibration:
             z_contact, freq_contact, depress_slope, slope, slope2 = coeffs
             contact_slope_delta = depress_slope - slope
             try_tap_threshold = contact_slope_delta * 0.20
-            max_safe_threshold = contact_slope_delta * 0.90
-            gcmd.respond_info("TAP_THRESHOLD tests should remain below %.3f" % (
-                max_safe_threshold))
             self._try_tap(gcmd, try_tap_threshold)
             self._refine_tap_threshold = try_tap_threshold
         elif tap_test == 'verify':
@@ -780,72 +726,7 @@ class EddyDescend:
             self._descend_z = config.getfloat('descend_z', above=0.)
         self._z_min_position = probe.lookup_minimum_z(config)
         self._gather = None
-<<<<<<< HEAD
-||||||| merged common ancestors
-<<<<<<<<< Temporary merge branch 1
-        probe.LookupZSteppers(config, self._dispatch.add_stepper)
-    # Interface for phoming.probing_move()
-    def get_steppers(self):
-        return self._dispatch.get_steppers()
-    def home_start(self, print_time, sample_time, sample_count, rest_time,
-                   triggered=True):
-        self._trigger_time = 0.
-        trigger_freq = self._calibration.height_to_freq(self._z_offset)
-        trigger_completion = self._dispatch.start(print_time)
-        self._sensor_helper.setup_home(
-            print_time, trigger_freq, self._dispatch.get_oid(),
-            mcu.MCU_trsync.REASON_ENDSTOP_HIT, self.REASON_SENSOR_ERROR)
-        return trigger_completion
-    def home_wait(self, home_end_time):
-        self._dispatch.wait_end(home_end_time)
-        trigger_time = self._sensor_helper.clear_home()
-        res = self._dispatch.stop()
-        if res >= mcu.MCU_trsync.REASON_COMMS_TIMEOUT:
-            if res == mcu.MCU_trsync.REASON_COMMS_TIMEOUT:
-                raise self._printer.command_error(
-                    "Communication timeout during homing")
-            error_code = res - self.REASON_SENSOR_ERROR
-            error_msg = self._sensor_helper.lookup_sensor_error(error_code)
-            raise self._printer.command_error(error_msg)
-        if res != mcu.MCU_trsync.REASON_ENDSTOP_HIT:
-            return 0.
-        if self._mcu.is_fileoutput():
-            return home_end_time
-        self._trigger_time = trigger_time
-        return trigger_time
-||||||||| 5eabae67
-        probe.LookupZSteppers(config, self._dispatch.add_stepper)
-    # Interface for phoming.probing_move()
-    def get_steppers(self):
-        return self._dispatch.get_steppers()
-    def home_start(self, print_time, sample_time, sample_count, rest_time,
-                   triggered=True):
-        self._trigger_time = 0.
-        trigger_freq = self._calibration.height_to_freq(self._z_offset)
-        trigger_completion = self._dispatch.start(print_time)
-        self._sensor_helper.setup_home(
-            print_time, trigger_freq, self._dispatch.get_oid(),
-            mcu.MCU_trsync.REASON_ENDSTOP_HIT, self.REASON_SENSOR_ERROR)
-        return trigger_completion
-    def home_wait(self, home_end_time):
-        self._dispatch.wait_end(home_end_time)
-        trigger_time = self._sensor_helper.clear_home()
-        res = self._dispatch.stop()
-        if res >= mcu.MCU_trsync.REASON_COMMS_TIMEOUT:
-            if res == mcu.MCU_trsync.REASON_COMMS_TIMEOUT:
-                raise self._printer.command_error(
-                    "Communication timeout during homing")
-            raise self._printer.command_error("Eddy current sensor error")
-        if res != mcu.MCU_trsync.REASON_ENDSTOP_HIT:
-            return 0.
-        if self._mcu.is_fileoutput():
-            return home_end_time
-        self._trigger_time = trigger_time
-        return trigger_time
-=========
-=======
         probe.HomingViaProbeHelper(config, self._descend_z)
->>>>>>> d74d36bb69bd8c561a169fd99e8c83e254318562
     def _prep_trigger_analog(self):
         sos_filter = self._trigger_analog.get_sos_filter()
         sos_filter.set_filter_design(None)
@@ -936,6 +817,8 @@ class EddyTap:
     # Measurement analysis to determine "tap" position
     def _validate_samples_time(self, measures, start_time, end_time):
         cmderr = self._printer.command_error
+        if end_time - start_time < 0.100:
+            raise cmderr("Tap detected too close to start of move")
         timestamps = [m[0] for m in measures]
         if len(timestamps) < 2:
             raise cmderr("Unable to obtain probe_eddy_current sensor readings")
@@ -981,9 +864,9 @@ class EddyTap:
         sps = self._sensor_helper.get_samples_per_second()
         contact_slope_delta = depress_slope - slope
         if contact_slope_delta < self._current_tap_threshold:
-            msg = "no contact found at z=%.3f (slope delta %.6f vs %.6f)" % (
-                min_z, contact_slope_delta, self._current_tap_threshold)
-            self._error_detect(msg)
+            self._error_detect("insufficient slope delta (%.6f vs %.6f)"
+                               % (contact_slope_delta,
+                                  self._current_tap_threshold))
         if slope >= 0. or slope2 < 0.:
             self._error_detect("invalid free air slope (s=%.6f s2=%.6f)"
                                % (slope, slope2))
@@ -1061,8 +944,6 @@ class EddyScanningProbe:
         return probe_results_from_avg(measures, toolhead_pos,
                                       self._calibration, self._offsets)
     def _rapid_lookahead_cb(self, printtime):
-        if self._gather is None:
-            return
         start_time = printtime - self._sample_time / 2
         end_time = start_time + self._sample_time
         self._gather.add_probe_request(self._analyze_scan, start_time, end_time,
@@ -1152,44 +1033,11 @@ class PrinterEddyProbe:
         # Basic probe requests
         self.probe_offsets = EddyProbeOffsets(config)
         self.param_helper = EddyParameterHelper(config)
-<<<<<<< HEAD
-        self.eddy_descend = EddyDescend(
-||||||| merged common ancestors
-        self.eddy_descend = EddyDescend(
-<<<<<<<<< Temporary merge branch 1
-            config, self.sensor_helper, self.calibration, self.param_helper)
-        self.cmd_helper = probe.ProbeCommandHelper(config, self,
-            replace_z_offset=True)
-        self.probe_offsets = probe.ProbeOffsetsHelper(config)
-        self.probe_session = probe.ProbeSessionHelper(
-            config, self.param_helper, self.eddy_descend.start_probe_session)
-||||||||| 5eabae67
-            config, self.sensor_helper, self.calibration, self.param_helper)
-        self.cmd_helper = probe.ProbeCommandHelper(config, self)
-        self.probe_offsets = probe.ProbeOffsetsHelper(config)
-        self.probe_session = probe.ProbeSessionHelper(
-            config, self.param_helper, self.eddy_descend.start_probe_session)
-=========
-=======
         eddy_descend = EddyDescend(
->>>>>>> d74d36bb69bd8c561a169fd99e8c83e254318562
             config, self.sensor_helper, self.calibration, self.probe_offsets,
             self.param_helper, trig_analog)
-<<<<<<< HEAD
-        # Create wrapper to support Z homing with probe
-        mcu_probe = EddyEndstopWrapper(self.sensor_helper, self.eddy_descend)
-        probe.HomingViaProbeHelper(config, mcu_probe,
-                                   self.probe_offsets, self.param_helper)
-||||||| merged common ancestors
-        # Create wrapper to support Z homing with probe
->>>>>>>>> Temporary merge branch 2
-        mcu_probe = EddyEndstopWrapper(self.sensor_helper, self.eddy_descend)
-        probe.HomingViaProbeHelper(config, mcu_probe,
-                                   self.probe_offsets, self.param_helper)
-=======
         self.eddy_descend_session = probe.SampleAveragingHelper(
             config, self.param_helper, eddy_descend.start_probe_session)
->>>>>>> d74d36bb69bd8c561a169fd99e8c83e254318562
         # Probing via "tap" interface
         eddy_tap = EddyTap(config, self.sensor_helper,
                            self.param_helper, trig_analog)
@@ -1203,19 +1051,6 @@ class PrinterEddyProbe:
         self.cmd_helper = probe.ProbeCommandHelper(config, self,
                                                    can_set_z_offset=False)
         self.printer.add_object('probe', self)
-        # Register tap as a manual probe provider
-        mprobe = self.printer.load_object(config, 'manual_probe')
-        mprobe.register_manual_method("tap", self._handle_manual_probe_via_tap)
-    def _handle_manual_probe_via_tap(self, gcmd):
-        fo_params = dict(gcmd.get_command_parameters())
-        fo_params["METHOD"] = "tap"
-        gcode = self.printer.lookup_object('gcode')
-        fo_gcmd = gcode.create_gcode_command("PROBE", "PROBE", fo_params)
-        probe_session = self.eddy_tap_session.start_probe_session(fo_gcmd)
-        probe_session.run_probe(fo_gcmd)
-        pos = probe_session.pull_probed_results()[0]
-        probe_session.end_probe_session()
-        return pos
     def add_client(self, cb):
         self.sensor_helper.add_client(cb)
     def get_probe_params(self, gcmd=None):
